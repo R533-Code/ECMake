@@ -34,6 +34,38 @@ set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_TWEA
 
 message(STATUS "Using ECMake v${EC_VERSION_STRING}")
 
+# Parses a version from a string of format `{}.{}.{}.{}`.
+# Only the major version is required, the rest is set to 0 if non-existent.
+# VERSION: The version string to parse
+# PREFIX: The prefix for the output variables
+function(ec_parse_version VERSION PREFIX)
+    if(NOT "${VERSION}" MATCHES "^([0-9]+)(\\.([0-9]+))?(\\.([0-9]+))?(\\.([0-9]+))?$")
+        message(FATAL_ERROR "Invalid version: '${VERSION}'")
+    endif()
+
+    set(_MAJOR "${CMAKE_MATCH_1}")
+    set(_MINOR "${CMAKE_MATCH_3}")
+    set(_PATCH "${CMAKE_MATCH_5}")
+    set(_TWEAK "${CMAKE_MATCH_7}")
+
+    if(_MINOR STREQUAL "")
+        set(_MINOR 0)
+    endif()
+
+    if(_PATCH STREQUAL "")
+        set(_PATCH 0)
+    endif()
+
+    if(_TWEAK STREQUAL "")
+        set(_TWEAK 0)
+    endif()
+
+    set(${PREFIX}_MAJOR "${_MAJOR}" PARENT_SCOPE)
+    set(${PREFIX}_MINOR "${_MINOR}" PARENT_SCOPE)
+    set(${PREFIX}_PATCH "${_PATCH}" PARENT_SCOPE)
+    set(${PREFIX}_TWEAK "${_TWEAK}" PARENT_SCOPE)
+endfunction()
+
 # ########################
 # GLOBAL PROPERTIES UTILS
 # ########################
