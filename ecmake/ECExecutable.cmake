@@ -29,12 +29,14 @@ function(ec_add_executable NAME)
         message(VERBOSE "Writing `${NAME}_config.h/cpp`...")
         ec_target_write_config("${NAME_ALIAS}" "${NAME}"
             ${EXEC_VERSION_MAJOR} ${EXEC_VERSION_MINOR} ${EXEC_VERSION_PATCH} ${EXEC_VERSION_TWEAK}
-            "${CMAKE_BINARY_DIR}" "" "" _exec_extra
+            "${CMAKE_CURRENT_BINARY_DIR}" "" "" _exec_extra
         )
     endif()
 
     add_executable(${NAME} ${_exec_cpp} ${_exec_hpp} ${_exec_extra})
     add_executable(${NAME_ALIAS} ALIAS ${NAME})
+
+    target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
     # set properties for better defaults
     ec_target_set_default_properties(${NAME} ${EXEC_CXX_VERSION}
