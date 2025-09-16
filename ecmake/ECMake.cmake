@@ -283,7 +283,7 @@ function(ec_target_write_config ALIAS_NAME TARGET_NAME
         "/// @param compare_patch Non-zero to compare the patch field, 0 to ignore\n"
         "/// @param compare_tweak Non-zero to compare the tweak field, 0 to ignore\n"
         "/// @return -1 if runtime < macro, 1 if runtime > macro, 0 if equal, only selected fields are compared\n"
-        "static int ec_compare_version_${lower_full_name}(int compare_major, int compare_minor, int compare_patch, int compare_tweak) {\n"
+        "static inline int ec_compare_version_${lower_full_name}(int compare_major, int compare_minor, int compare_patch, int compare_tweak) {\n"
         "  unsigned vmaj, vmin, vpat, vtwk;\n"
         "  ec_get_version_${lower_full_name}(&vmaj, &vmin, &vpat, &vtwk);\n"
         "  \n"
