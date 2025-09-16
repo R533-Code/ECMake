@@ -26,9 +26,7 @@ function(ec_add_executable NAME)
     file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.hpp")
 
     if(NOT EXEC_NO_CONFIG)
-        message(VERBOSE "Writing `${NAME}_config.h`...")
-        ec_namespace_get(full_name "_")
-        set(full_name "${full_name}${NAME}")
+        message(VERBOSE "Writing `${NAME}_config.h/cpp`...")
         ec_target_write_config("${NAME_ALIAS}" "${NAME}"
             ${EXEC_VERSION_MAJOR} ${EXEC_VERSION_MINOR} ${EXEC_VERSION_PATCH} ${EXEC_VERSION_TWEAK}
             "${CMAKE_BINARY_DIR}" "" "" _exec_extra
@@ -38,12 +36,13 @@ function(ec_add_executable NAME)
     add_executable(${NAME} ${_exec_cpp} ${_exec_hpp} ${_exec_extra})
     add_executable(${NAME_ALIAS} ALIAS ${NAME})
 
-    # set the default properties for better
+    # set properties for better defaults
     ec_target_set_default_properties(${NAME} ${EXEC_CXX_VERSION}
         ${ARGN}
     )
 
     if(NOT EXEC_NO_INSTALL)
+        # install the target
         install(TARGETS ${NAME}
             RUNTIME DESTINATION ${EXEC_INSTALL_BINDIR}
             BUNDLE DESTINATION ${EXEC_INSTALL_BINDIR}
