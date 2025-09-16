@@ -112,7 +112,7 @@ endfunction(ec_property_print)
 ec_noop()
 
 # list of global properties
-set(EC_GLOBAL_PROPERTIES "EC_ALL_TARGETS;EC_ALL_EXECUTABLES;EC_ALL_LIBRARIES;EC_ALL_LIBRARIES_STATIC;EC_ALL_LIBRARIES_DYNAMIC;EC_NAMESPACE_STACK")
+set(EC_GLOBAL_PROPERTIES "EC_ALL_TARGETS;EC_ALL_EXECUTABLES;EC_ALL_LIBRARIES;EC_ALL_LIBRARIES_STATIC;EC_ALL_LIBRARIES_DYNAMIC;EC_NAMESPACE_STACK;EC_ADD_SUBDIRECTORY_GUARD")
 
 # initialize all global properties to an empty string
 foreach(_ec_global_prop EC_GLOBAL_PROPERTIES)
@@ -152,4 +152,57 @@ endmacro()
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_libraries_dynamic OUT_VAR)
     ec_property_get(EC_ALL_LIBRARIES_DYNAMIC OUT_VAR)
+endmacro()
+
+# ########################
+# ADD CMAKE LIBRARY SETUP
+# ########################
+ec_noop()
+
+# Sets `BUILD_SHARED_LIBS` to a specific value after caching its old one.
+# VALUE: TRUE for dynamic libraries or FALSE for static libraries
+function(ec_build_dylib VALUE)
+    set(OLD_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}" CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS "${VALUE}" CACHE BOOL "" FORCE)
+endfunction()
+
+# Restores `BUILD_SHARED_LIBS` to its value before the call to `lars_build_dylib`
+function(ec_restore_dylib)
+    set(BUILD_SHARED_LIBS "${OLD_BUILD_SHARED_LIBS}" CACHE BOOL "" FORCE)
+endfunction()
+
+# Adds a CMake subdirectory. This is exactly the same as `add_subdirectory`
+# with the only difference being that adding the same subdirectory twice
+# only results in a single inclusion.
+function(ec_add_subdirectory SUBDIR)
+    file(REAL_PATH "${SUBDIR}" _abs_path)
+    get_property(_visited GLOBAL PROPERTY EC_ADD_SUBDIRECTORY_GUARD)
+    list(FIND _visited "${_abs_path}" _found_index)
+
+    if(_found_index EQUAL -1)
+        ec_property_push_back(EC_ADD_SUBDIRECTORY_GUARD "${_abs_path}")
+        message(VERBOSE "Adding subdirectory: `${_abs_path}`")
+
+        get_filename_component(_name "${SUBDIR}" NAME)
+        add_subdirectory(
+            "${SUBDIR}"
+            "${CMAKE_BINARY_DIR}/_ec_deps/${_name}"
+        )
+    else()
+        message(VERBOSE "Skipping already-added: `${_abs_path}`")
+    endif()
+endfunction()
+
+# Adds a subdirectory with `BUILD_SHARED_LIBS` set to false
+macro(ec_add_subdirectory_static PATH)
+    ec_build_dylib(FALSE)
+    ec_add_subdirectory(${PATH})
+    ec_restore_dylib()
+endmacro()
+
+# Adds a subdirectory with `BUILD_SHARED_LIBS` set to true
+macro(ec_add_subdirectory_dynamic PATH)
+    ec_build_dylib(TRUE)
+    ec_add_subdirectory(${PATH})
+    ec_restore_dylib()
 endmacro()
