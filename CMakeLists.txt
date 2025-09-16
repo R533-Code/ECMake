@@ -21,8 +21,15 @@ if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_MESSAGE_LOG_LEVEL VERBOSE CACHE STRING "" FORCE)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist" CACHE PATH "" FORCE)
 
+    file(GLOB_RECURSE ec_all_tests "tests/*/CMakeLists.txt")
+
     project(ECMakeTest)
     ec_namespace(tests)
-    ec_add_executable(basic ROOT_DIR "tests/basic")
+
+    foreach(subdir "${ec_all_tests}")
+        cmake_path(GET subdir PARENT_PATH subdir)
+        ec_add_subdirectory(${subdir})
+    endforeach()
+
     ec_endnamespace(tests)
 endif()
