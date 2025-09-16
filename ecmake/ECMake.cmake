@@ -227,7 +227,7 @@ ec_noop()
 # EXPORT_INCLUDE_FILE: The file to include (e.g. `libexample_export.h`)
 #
 # OUT_FILE_NAMES: If not empty, variable to which to write the path of the generated `.h` and `.cpp` as a list
-function(ec_binary_write_config ALIAS_NAME TARGET_NAME
+function(ec_target_write_config ALIAS_NAME TARGET_NAME
     VERSION_MAJOR VERSION_MINOR VERSION_TWEAK VERSION_PATCH
     DIR_PATH
     EXPORT_MACRO EXPORT_INCLUDE_FILE
@@ -277,6 +277,7 @@ function(ec_binary_write_config ALIAS_NAME TARGET_NAME
         "void ec_get_version_${lower_full_name}(unsigned* major, unsigned* minor, unsigned* patch, unsigned* tweak);\n"
         "\n"
         "/// @brief Compare the runtime compiled version of `${ALIAS_NAME}` against the header macros.\n"
+        "/// This function is only useful for shared libraries."
         "/// @param compare_major Non-zero to compare the major field, 0 to ignore\n"
         "/// @param compare_minor Non-zero to compare the minor field, 0 to ignore\n"
         "/// @param compare_patch Non-zero to compare the patch field, 0 to ignore\n"
@@ -324,5 +325,36 @@ function(ec_binary_write_config ALIAS_NAME TARGET_NAME
 
     if(OUT_FILE_NAMES)
         set(${OUT_FILE_NAMES} "${DIR_PATH}/${NAME}_config.h;${DIR_PATH}/${NAME}_config.cpp" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Sets the ECMake default properties for a specific target.
+# NAME: The target name
+# CXX_VERSION: The C++ version to use when compiling the target
+function(ec_target_set_default_properties NAME CXX_VERSION)
+    cmake_parse_arguments("INT"
+        "NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC"
+        ""
+        ""
+        ${ARGN}
+    )
+
+    set_target_properties(${NAME} PROPERTIES
+        CXX_STANDARD "${CXX_VERSION}"
+        CXX_STANDARD_REQUIRED TRUE
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN hidden
+    )
+
+    if(NOT INT_NO_PIC)
+        set_target_properties(${NAME} PROPERTIES
+            POSITION_INDEPENDENT_CODE TRUE
+        )
+        message(VERBOSE "Adding position independent code")
+    endif()
+
+    if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
+        target_compile_options(${NAME} PRIVATE "/Zc:preprocessor")
+        message(VERBOSE "Adding conformant preprocessor (for MSVC)")
     endif()
 endfunction()
