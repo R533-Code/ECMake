@@ -333,27 +333,54 @@ endfunction()
 # CXX_VERSION: The C++ version to use when compiling the target
 function(ec_target_set_default_properties NAME CXX_VERSION)
     cmake_parse_arguments("INT"
-        "NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC"
+        "NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX"
         ""
         ""
         ${ARGN}
     )
 
     set_target_properties(${NAME} PROPERTIES
+
+        # set the C++ standard version, by default C++20
         CXX_STANDARD "${CXX_VERSION}"
         CXX_STANDARD_REQUIRED TRUE
+
+        # do not export functions if no EXPORT macro is used
+        C_VISIBILITY_PRESET hidden
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN hidden
+
+        # no lib prefix on linux
+        PREFIX ""
     )
 
-    if(NOT INT_NO_PIC)
+    if(NOT INT_NO_DEBUG_POSTFIX)
+        # add a 'd' at the end of the resulting binary on debug
+        # configuration
         set_target_properties(${NAME} PROPERTIES
-            POSITION_INDEPENDENT_CODE TRUE
+            DEBUG_POSTFIX "d"
         )
-        message(VERBOSE "Adding position independent code")
+        message(VERBOSE "Adding debug postfix")
+    endif()
+
+    get_target_property(libtype ${NAME} TYPE)
+
+    if(libtype STREQUAL "SHARED_LIBRARY")
+        if(NOT INT_NO_PIC)
+            set_target_properties(${NAME} PROPERTIES
+                POSITION_INDEPENDENT_CODE TRUE
+            )
+            message(VERBOSE "Adding position independent code")
+        else()
+            # shared libraries must always be compiled with POSITION_INDEPENDENT_CODE
+            # set to true.
+            message(WARNING "Dynamic libraries cannot have the NO_PIC option present!")
+        endif()
     endif()
 
     if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
+        # This forces MSVC to use the conformant preprocessor,
+        # which should really be a default for portable code.
         target_compile_options(${NAME} PRIVATE "/Zc:preprocessor")
         message(VERBOSE "Adding conformant preprocessor (for MSVC)")
     endif()
