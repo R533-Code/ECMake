@@ -26,7 +26,7 @@ if(PROJECT_IS_TOP_LEVEL)
     project(ECMakeTest)
     ec_namespace(tests)
 
-    foreach(subdir "${ec_all_tests}")
+    foreach(subdir ${ec_all_tests})
         cmake_path(GET subdir PARENT_PATH subdir)
         ec_add_subdirectory(${subdir})
     endforeach()
