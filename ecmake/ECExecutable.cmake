@@ -5,6 +5,10 @@ include(ECNamespace)
 include(ECParseArgs)
 
 function(ec_add_executable NAME)
+    # This must happen before parsing the defaults so that
+    # ${CMAKE_INSTALL_BINDIR} expands to a non-empty string
+    include(GNUInstallDirs)
+
     ec_parse_with_defaults(EXEC
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
         "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
@@ -43,8 +47,6 @@ function(ec_add_executable NAME)
     )
 
     if(NOT EXEC_NO_INSTALL)
-        include(GNUInstallDirs)
-
         # install the target
         install(TARGETS ${NAME}
             RUNTIME DESTINATION ${EXEC_INSTALL_BINDIR}

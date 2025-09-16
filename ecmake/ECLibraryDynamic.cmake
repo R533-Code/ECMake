@@ -6,6 +6,10 @@ include(ECParseArgs)
 include(GenerateExportHeader)
 
 function(ec_add_library_dynamic NAME)
+    # This must happen before parsing the defaults so that
+    # ${CMAKE_INSTALL_BINDIR} expands to a non-empty string
+    include(GNUInstallDirs)
+
     ec_parse_with_defaults(LIB
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
         "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
@@ -59,8 +63,6 @@ function(ec_add_library_dynamic NAME)
     target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
     if(NOT LIB_NO_INSTALL)
-        include(GNUInstallDirs)
-
         # install the target
         install(TARGETS ${NAME}
             RUNTIME DESTINATION ${LIB_INSTALL_BINDIR}
