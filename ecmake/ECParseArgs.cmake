@@ -12,7 +12,7 @@ function(ec_parse_with_defaults prefix defaults options one_value multi_value)
             math(EXPR _j "${i}+1")
 
             if(_j GREATER _last)
-                message(FATAL_ERROR "Defaults must be KEY VALUE pairs. Missing value for '${_k}'.")
+                message(FATAL_ERROR "Defaults must be KEY;VALUE pairs. Missing value for '${_k}'.")
             endif()
 
             list(GET _defaults ${_j} _v)
@@ -21,15 +21,6 @@ function(ec_parse_with_defaults prefix defaults options one_value multi_value)
     endif()
 
     cmake_parse_arguments(PARSE "${options}" "${one_value}" "${multi_value}" ${ARGN})
-
-    foreach(k IN LISTS options)
-        if(DEFINED PARSE_${k})
-        elseif(DEFINED _def_${k})
-            set(PARSE_${k} "${_def_${k}}")
-        else()
-            message(FATAL_ERROR "Missing required option '${k}' with no default.")
-        endif()
-    endforeach()
 
     foreach(k IN LISTS one_value)
         if(DEFINED PARSE_${k})
