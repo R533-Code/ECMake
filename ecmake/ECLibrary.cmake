@@ -20,7 +20,7 @@ function(ec_add_library NAME)
 
     ec_namespace_get(current_namespace "::")
     set(NAME_ALIAS "${current_namespace}${NAME}")
-    message(VERBOSE "Creating dynamic library ${NAME_ALIAS} v${LIB_VERSION} with root dir `${LIB_ROOT_DIR}`, (C++${LIB_CXX_VERSION})...")
+    message(VERBOSE "Creating library ${NAME_ALIAS} v${LIB_VERSION} with root dir `${LIB_ROOT_DIR}`, (C++${LIB_CXX_VERSION})...")
 
     ec_parse_version("${LIB_VERSION}" LIB_VERSION)
 
@@ -46,6 +46,7 @@ function(ec_add_library NAME)
     endif()
 
     add_library(${NAME} ${_lib_cpp} ${_lib_hpp} ${_lib_extra})
+
     # register the target globally so that it is accessible through
     # the global properties
     ec_register_target(${NAME} ${NAME_ALIAS})

@@ -20,6 +20,7 @@ include(ECLibrary)
 if(PROJECT_IS_TOP_LEVEL)
     # also log message(VERBOSE)
     set(CMAKE_MESSAGE_LOG_LEVEL VERBOSE CACHE STRING "" FORCE)
+
     # change install path to "/dist/CONFIG"
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist/${CMAKE_BUILD_TYPE}" CACHE PATH "" FORCE)
 
@@ -34,6 +35,17 @@ if(PROJECT_IS_TOP_LEVEL)
         cmake_path(GET subdir PARENT_PATH subdir)
         ec_add_subdirectory(${subdir})
     endforeach()
+
+    ec_list_all_targets(all_targets)
+    ec_list_all_executables(all_executables)
+    ec_list_all_libraries(all_libraries)
+    ec_list_all_libraries_dynamic(all_libraries_dynamic)
+    ec_list_all_libraries_static(all_libraries_static)
+    message(VERBOSE "Found targets: ${all_targets}")
+    message(VERBOSE "Found executables: ${all_executables}")
+    message(VERBOSE "Found libraries: ${all_libraries}")
+    message(VERBOSE "Found dynamic libraries: ${all_libraries_dynamic}")
+    message(VERBOSE "Found static libraries: ${all_libraries_static}")
 
     ec_endnamespace(tests)
 endif()

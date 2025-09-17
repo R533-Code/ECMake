@@ -238,8 +238,8 @@ function(ec_register_target TARGET ALIAS)
         endif()
 
         ec_property_push_back(EC_ALL_EXECUTABLES "${ALIAS}")
-        endif()
-        
+    endif()
+
     ec_property_push_back(EC_ALL_TARGETS "${ALIAS}")
 endfunction(ec_register_target)
 

@@ -48,6 +48,7 @@ function(ec_add_library_dynamic NAME)
     endif()
 
     add_library(${NAME} SHARED ${_lib_cpp} ${_lib_hpp} ${_lib_extra})
+
     # register the target globally so that it is accessible through
     # the global properties
     ec_register_target(${NAME} ${NAME_ALIAS})

@@ -37,6 +37,7 @@ function(ec_add_executable NAME)
     endif()
 
     add_executable(${NAME} ${_exec_cpp} ${_exec_hpp} ${_exec_extra})
+
     # register the target globally so that it is accessible through
     # the global properties
     ec_register_target(${NAME} ${NAME_ALIAS})
