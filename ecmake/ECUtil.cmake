@@ -127,31 +127,31 @@ ec_noop()
 # Returns the list of current targets defined using ECMake functions.
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_targets OUT_VAR)
-    ec_property_get(EC_ALL_TARGETS OUT_VAR)
+    ec_property_get(EC_ALL_TARGETS "${OUT_VAR}")
 endmacro()
 
 # Returns the list of current executables defined using ECMake functions.
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_executables OUT_VAR)
-    ec_property_get(EC_ALL_EXECUTABLES OUT_VAR)
+    ec_property_get(EC_ALL_EXECUTABLES "${OUT_VAR}")
 endmacro()
 
 # Returns the list of current libraries (dynamic and static) defined using ECMake functions.
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_libraries OUT_VAR)
-    ec_property_get(EC_ALL_LIBRARIES OUT_VAR)
+    ec_property_get(EC_ALL_LIBRARIES "${OUT_VAR}")
 endmacro()
 
 # Returns the list of current static libraries defined using ECMake functions.
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_libraries_static OUT_VAR)
-    ec_property_get(EC_ALL_LIBRARIES_STATIC OUT_VAR)
+    ec_property_get(EC_ALL_LIBRARIES_STATIC "${OUT_VAR}")
 endmacro()
 
 # Returns the list of current dynamic libraries defined using ECMake functions.
 # OUT_VAR: The name of the variable to which to write the list
 macro(ec_list_all_libraries_dynamic OUT_VAR)
-    ec_property_get(EC_ALL_LIBRARIES_DYNAMIC OUT_VAR)
+    ec_property_get(EC_ALL_LIBRARIES_DYNAMIC "${OUT_VAR}")
 endmacro()
 
 # ########################
@@ -238,8 +238,8 @@ function(ec_register_target TARGET ALIAS)
         endif()
 
         ec_property_push_back(EC_ALL_EXECUTABLES "${ALIAS}")
-    endif()
-
+        endif()
+        
     ec_property_push_back(EC_ALL_TARGETS "${ALIAS}")
 endfunction(ec_register_target)
 
