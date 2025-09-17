@@ -10,7 +10,7 @@ project(ECMake VERSION 0.0.0.0
 # add `ecmake` directory to the include search path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ecmake")
 include(ECParseArgs)
-include(ECMake)
+include(ECUtil)
 include(ECNamespace)
 include(ECExecutable)
 include(ECLibraryDynamic)
