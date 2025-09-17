@@ -11,7 +11,7 @@ function(ec_add_library NAME)
     ec_parse_with_defaults(LIB
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
         "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
-        "VERSION;ROOT_DIR;CXX_VERSION" # one value
+        "VERSION;ROOT_DIR;CXX_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
         "" # multi value
         ${ARGN}
     )
