@@ -216,7 +216,7 @@ ec_noop()
 # TARGET: The target name
 # ALIAS: The alias name
 function(ec_register_target TARGET ALIAS)
-    get_target_property(libtype ${NAME} TYPE)
+    get_target_property(libtype ${TARGET} TYPE)
 
     if(libtype STREQUAL "SHARED_LIBRARY")
         if(NOT TARGET ALIAS)
