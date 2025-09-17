@@ -19,8 +19,8 @@ include(ECLibraryStatic)
 if(PROJECT_IS_TOP_LEVEL)
     # also log message(VERBOSE)
     set(CMAKE_MESSAGE_LOG_LEVEL VERBOSE CACHE STRING "" FORCE)
-    # change install path to "/dist"
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist" CACHE PATH "" FORCE)
+    # change install path to "/dist/CONFIG"
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist/${CMAKE_BUILD_TYPE}" CACHE PATH "" FORCE)
 
     # search for all the tests
     file(GLOB_RECURSE ec_all_tests "tests/*/CMakeLists.txt")
