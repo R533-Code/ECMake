@@ -46,7 +46,9 @@ function(ec_add_library NAME)
     endif()
 
     add_library(${NAME} ${_lib_cpp} ${_lib_hpp} ${_lib_extra})
-    add_library(${NAME_ALIAS} ALIAS ${NAME})
+    # register the target globally so that it is accessible through
+    # the global properties
+    ec_register_target(${NAME} ${NAME_ALIAS})
 
     # set properties for better defaults
     ec_target_set_default_properties(${NAME} ${LIB_CXX_VERSION}
@@ -68,6 +70,9 @@ function(ec_add_library NAME)
             COMPONENT ${LIB_INSTALL_COMPONENT}
         )
     endif()
+
+    ec_property_push_back(EC_ALL_TARGETS "${NAME_ALIAS}")
+    ec_property_push_back(EC_ALL_EXECUTABLES "${NAME_ALIAS}")
 
     message(VERBOSE "Created library ${NAME_ALIAS}.")
 endfunction(ec_add_library)

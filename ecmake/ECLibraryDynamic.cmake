@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-include(ECMake)
+include(ECUtil)
 include(ECNamespace)
 include(ECParseArgs)
 include(GenerateExportHeader)
@@ -48,7 +48,9 @@ function(ec_add_library_dynamic NAME)
     endif()
 
     add_library(${NAME} SHARED ${_lib_cpp} ${_lib_hpp} ${_lib_extra})
-    add_library(${NAME_ALIAS} ALIAS ${NAME})
+    # register the target globally so that it is accessible through
+    # the global properties
+    ec_register_target(${NAME} ${NAME_ALIAS})
 
     # set properties for better defaults
     ec_target_set_default_properties(${NAME} ${LIB_CXX_VERSION}

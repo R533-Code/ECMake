@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-include(ECMake)
+include(ECUtil)
 include(ECNamespace)
 include(ECParseArgs)
 
@@ -37,7 +37,9 @@ function(ec_add_executable NAME)
     endif()
 
     add_executable(${NAME} ${_exec_cpp} ${_exec_hpp} ${_exec_extra})
-    add_executable(${NAME_ALIAS} ALIAS ${NAME})
+    # register the target globally so that it is accessible through
+    # the global properties
+    ec_register_target(${NAME} ${NAME_ALIAS})
 
     target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
