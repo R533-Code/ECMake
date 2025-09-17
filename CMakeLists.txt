@@ -11,6 +11,7 @@ project(ECMake VERSION 0.0.0.0
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ecmake")
 include(ECParseArgs)
 include(ECUtil)
+include(ECTests)
 include(ECNamespace)
 include(ECExecutable)
 include(ECLibraryDynamic)
