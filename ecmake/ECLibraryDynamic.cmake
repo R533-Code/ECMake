@@ -71,5 +71,5 @@ function(ec_add_library_dynamic NAME)
         )
     endif()
 
-    message(VERBOSE "Created libutable ${NAME_ALIAS}.")
+    message(VERBOSE "Created library ${NAME_ALIAS}.")
 endfunction(ec_add_library_dynamic)
