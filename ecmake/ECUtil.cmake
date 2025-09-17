@@ -212,6 +212,37 @@ endmacro()
 # ########################
 ec_noop()
 
+# Registers a target and its alias globally.
+# TARGET: The target name
+# ALIAS: The alias name
+function(ec_register_target TARGET ALIAS)
+    get_target_property(libtype ${NAME} TYPE)
+
+    if(libtype STREQUAL "SHARED_LIBRARY")
+        if(NOT TARGET ALIAS)
+            add_library("${ALIAS}" ALIAS "${TARGET}")
+        endif()
+
+        ec_property_push_back(EC_ALL_LIBRARIES "${ALIAS}")
+        ec_property_push_back(EC_ALL_LIBRARIES_DYNAMIC "${ALIAS}")
+    elseif(libtype STREQUAL "STATIC_LIBRARY")
+        if(NOT TARGET ALIAS)
+            add_library("${ALIAS}" ALIAS "${TARGET}")
+        endif()
+
+        ec_property_push_back(EC_ALL_LIBRARIES "${ALIAS}")
+        ec_property_push_back(EC_ALL_LIBRARIES_STATIC "${ALIAS}")
+    elseif(libtype STREQUAL "EXECUTABLE")
+        if(NOT TARGET ALIAS)
+            add_executable("${ALIAS}" ALIAS "${TARGET}")
+        endif()
+
+        ec_property_push_back(EC_ALL_EXECUTABLES "${ALIAS}")
+    endif()
+
+    ec_property_push_back(EC_ALL_TARGETS "${ALIAS}")
+endfunction(ec_register_target)
+
 # Writes a configuration file containing target/version information.
 # ALIAS_NAME: The namespace qualified name of the target, '::' will be replaced with '_'
 # TARGET_NAME: The target name
