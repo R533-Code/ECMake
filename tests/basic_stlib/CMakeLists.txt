@@ -1,0 +1,4 @@
+include(ECLibraryStatic)
+
+# creates a static library by looking at the files in the `src` directory
+ec_add_library_static("basic_stlib")
