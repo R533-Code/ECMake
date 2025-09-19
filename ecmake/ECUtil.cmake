@@ -243,6 +243,19 @@ function(ec_register_target TARGET ALIAS)
     ec_property_push_back(EC_ALL_TARGETS "${ALIAS}")
 endfunction(ec_register_target)
 
+# Returns the name of the aliased target.
+# ALIAS: The alias name
+# OUT_VAR: The output variable
+function(ec_get_aliased_target ALIAS OUT_VAR)
+    ec_assert("Expected an alias target name!" TARGET "${ALIAS}")
+
+    get_property(_has TARGET "${ALIAS}" PROPERTY ALIASED_TARGET SET)
+    ec_assert("Expected an alias target name!" _has)
+
+    get_target_property(_t "${ALIAS}" ALIASED_TARGET)
+    set(${OUT_VAR} "${_t}" PARENT_SCOPE)
+endfunction()
+
 # Writes a configuration file containing target/version information.
 # ALIAS_NAME: The namespace qualified name of the target, '::' will be replaced with '_'
 # TARGET_NAME: The target name
