@@ -7,4 +7,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(doctest)
 
-ec_add_tests(basic_tests_doctest)
+ec_add_tests(basic_tests_doctest
+    TESTING_FRAMEWORK doctest
+)
