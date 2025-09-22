@@ -7,6 +7,11 @@ project(ECMake VERSION 0.0.0.0
     LANGUAGES NONE
 )
 
+option(EC_SET_FETCHCONTENT_DIR
+    "Allow ECMake to override the directory in which FetchContent downloads."
+    TRUE
+)
+
 # add `ecmake` directory to the include search path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ecmake")
 include(ECParseArgs)
@@ -18,6 +23,10 @@ include(ECLibraryDynamic)
 include(ECLibraryStatic)
 include(ECLibrary)
 include(ECPython)
+
+if(${EC_SET_FETCHCONTENT_DIR})
+    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.build_cache/fetch_content/")
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
     # also log message(VERBOSE)
