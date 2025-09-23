@@ -51,7 +51,8 @@ function(ec_add_library_static NAME)
         ${ARGN}
     )
 
-    target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_include_directories(${NAME} SYSTEM PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+    target_include_directories(${NAME} PUBLIC "${LIB_ROOT_DIR}/src")
 
     if(NOT LIB_NO_INSTALL)
         # install the target

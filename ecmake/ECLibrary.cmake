@@ -61,7 +61,8 @@ function(ec_add_library NAME)
         EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/${_lib_export_include}"
         BASE_NAME "${_lib_export_prefix}"
     )
-    target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_include_directories(${NAME} SYSTEM PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+    target_include_directories(${NAME} PUBLIC "${LIB_ROOT_DIR}/src")
 
     if(NOT LIB_NO_INSTALL)
         # install the target
