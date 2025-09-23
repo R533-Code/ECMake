@@ -213,6 +213,7 @@ endmacro()
 ec_noop()
 
 # Registers a target and its alias globally.
+# If ALIAS does not exist, it is created.
 # TARGET: The target name
 # ALIAS: The alias name
 function(ec_register_target TARGET ALIAS)
@@ -258,6 +259,48 @@ function(ec_get_aliased_target ALIAS OUT_VAR)
     else()
         set(${OUT_VAR} "${ALIAS}" PARENT_SCOPE)
     endif()
+endfunction()
+
+function(ec_get_linked_shared_targets ROOT_TARGET OUT)
+    set(seen)
+    set(hit)
+
+    function(_walk t)
+        if(NOT TARGET "${t}")
+            return()
+        endif()
+
+        ec_get_aliased_target(${t} t)
+
+        if("${t}" IN_LIST seen)
+            return()
+        endif()
+
+        list(APPEND seen "${t}")
+
+        get_target_property(_type "${t}" TYPE)
+
+        if(_type STREQUAL "SHARED_LIBRARY")
+            list(APPEND hit "${t}")
+        endif()
+
+        foreach(prop IN ITEMS LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
+            get_target_property(_deps "${t}" ${prop})
+
+            foreach(d IN LISTS _deps)
+                if(TARGET "${d}")
+                    _walk("${d}")
+                endif()
+            endforeach()
+        endforeach()
+
+        set(seen "${seen}" PARENT_SCOPE)
+        set(hit "${hit}" PARENT_SCOPE)
+    endfunction()
+
+    _walk("${ROOT_TARGET}")
+    list(REMOVE_DUPLICATES hit)
+    set(${OUT} "${hit}" PARENT_SCOPE)
 endfunction()
 
 # Writes a configuration file containing target/version information.
