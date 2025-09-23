@@ -5,6 +5,9 @@ include(ECParseArgs)
 
 function(ec_add_python_bindings TARGET_NAME)
     include(GNUInstallDirs)
+    ec_assert("Python must be included before calling `ec_add_python_bindings`"
+        TARGET Python::Module
+    )
 
     ec_parse_with_defaults(
         BIND
@@ -85,6 +88,11 @@ function(ec_add_python_bindings TARGET_NAME)
     # Write stub file
     # ########################
     if(NOT BIND_NO_REGISTER_STUB_FILES AND NOT "${BIND_STUB_PATTERN_FILES}" STREQUAL "<none>")
+        get_property(_INIT GLOBAL PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS")
+        if(_INIT STREQUAL "NOTFOUND")
+            set_property(GLOBAL PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS" "")
+        endif()
+        
         set_property(GLOBAL
             APPEND PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS"
             "${BIND_STUB_PATTERN_FILES}"
