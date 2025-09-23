@@ -1,6 +1,8 @@
 include(ECPython)
 include(FetchContent)
 
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+
 FetchContent_Declare(
     nanobind
     GIT_REPOSITORY https://github.com/wjakob/nanobind.git

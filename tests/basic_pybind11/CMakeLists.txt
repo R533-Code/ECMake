@@ -1,6 +1,8 @@
 include(ECPython)
 include(FetchContent)
 
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+
 FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
