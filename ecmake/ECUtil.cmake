@@ -244,16 +244,20 @@ function(ec_register_target TARGET ALIAS)
 endfunction(ec_register_target)
 
 # Returns the name of the aliased target.
+# If the target is not an alias, ALIAS is returned.
 # ALIAS: The alias name
 # OUT_VAR: The output variable
 function(ec_get_aliased_target ALIAS OUT_VAR)
     ec_assert("Expected an alias target name!" TARGET "${ALIAS}")
 
     get_property(_has TARGET "${ALIAS}" PROPERTY ALIASED_TARGET SET)
-    ec_assert("Expected an alias target name!" _has)
 
-    get_target_property(_t "${ALIAS}" ALIASED_TARGET)
-    set(${OUT_VAR} "${_t}" PARENT_SCOPE)
+    if(${has})
+        get_target_property(_t "${ALIAS}" ALIASED_TARGET)
+        set(${OUT_VAR} "${_t}" PARENT_SCOPE)
+    else()
+        set(${OUT_VAR} "${ALIAS}" PARENT_SCOPE)
+    endif()
 endfunction()
 
 # Writes a configuration file containing target/version information.
