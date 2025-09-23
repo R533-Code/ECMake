@@ -25,7 +25,9 @@ include(ECLibrary)
 include(ECPython)
 
 if(${EC_SET_FETCHCONTENT_DIR})
-    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.build_cache/fetch_content/")
+    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.build_cache/fetch_content/"
+        CACHE PATH "Directory in which FetchContent downloads" FORCE
+    )
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
