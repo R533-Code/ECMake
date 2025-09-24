@@ -25,13 +25,6 @@ ec_assert("Do not include `ECMake.cmake` directly, make use of `add_subdirectory
     ${PROJECT_NAME} STREQUAL "ECMake"
 )
 
-# get version information and print
-set(EC_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(EC_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(EC_VERSION_TWEAK ${PROJECT_VERSION_TWEAK})
-set(EC_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_TWEAK}.${EC_VERSION_PATCH}")
-
 message(STATUS "Using ECMake v${EC_VERSION_STRING}")
 
 # Parses a version from a string of format `{}.{}.{}.{}`.
