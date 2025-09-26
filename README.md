@@ -20,3 +20,7 @@ ec_add_executable(ExecName)
 ```
 
 `ECMake` provides `ec_add_executable`, `ec_add_library` (with automatic export header generation), using a consitent API. Each binary also comes with its own version (rather than having a shared version with the project!).
+
+`ECMake` provides `ec_add_tests`, which supports `Catch2`, `doctest` and `gtest` out of the box.
+
+`ECMake` provides `ec_add_python_bindings`, which supports `pybind11` and `nanobind` out of the box.
