@@ -1,7 +1,6 @@
 include(ECNamespace)
 include(ECExecutable)
-include(ECLibraryDynamic)
-include(ECLibraryStatic)
+include(ECLibrary)
 
 ec_namespace(inter_exec_with_deps)
 
