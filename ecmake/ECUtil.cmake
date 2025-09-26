@@ -422,7 +422,7 @@ endfunction()
 # Sets the ECMake default properties for a specific target.
 # NAME: The target name
 # CXX_VERSION: The C++ version to use when compiling the target
-function(ec_target_set_default_properties NAME CXX_VERSION)
+function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     cmake_parse_arguments("INT"
         "NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX"
         ""
@@ -431,10 +431,11 @@ function(ec_target_set_default_properties NAME CXX_VERSION)
     )
 
     set_target_properties(${NAME} PROPERTIES
-
-        # set the C++ standard version, by default C++20
         CXX_STANDARD "${CXX_VERSION}"
         CXX_STANDARD_REQUIRED TRUE
+        
+        C_STANDARD "${C_VERSION}"
+        C_STANDARD_REQUIRED TRUE
 
         # do not export functions if no EXPORT macro is used
         C_VISIBILITY_PRESET hidden
