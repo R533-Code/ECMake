@@ -19,8 +19,6 @@ include(ECUtil)
 include(ECTests)
 include(ECNamespace)
 include(ECExecutable)
-include(ECLibraryDynamic)
-include(ECLibraryStatic)
 include(ECLibrary)
 include(ECPython)
 
