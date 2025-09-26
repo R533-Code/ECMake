@@ -11,7 +11,7 @@ function(ec_add_library NAME)
 
     ec_parse_with_defaults(LIB
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime;LIBRARY_KIND;\"\"" # defaults
-        "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
+        "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA" # options
         "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT;LIBRARY_KIND" # one value
         "" # multi value
         ${ARGN}
@@ -25,8 +25,14 @@ function(ec_add_library NAME)
 
     ec_parse_version("${LIB_VERSION}" LIB_VERSION)
 
-    file(GLOB_RECURSE _lib_cpp "${LIB_ROOT_DIR}/src/*.cpp" "${LIB_ROOT_DIR}/src/*.c" "${LIB_ROOT_DIR}/src/*.cu")
-    file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/src/*.hpp" "${LIB_ROOT_DIR}/src/*.h" "${LIB_ROOT_DIR}/src/*.cuh")
+    if(${EXEC_WITH_CUDA})
+        enable_language(CUDA)
+        file(GLOB_RECURSE _lib_cpp "${LIB_ROOT_DIR}/src/*.cpp" "${LIB_ROOT_DIR}/src/*.c" "${LIB_ROOT_DIR}/src/*.cu")
+        file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/src/*.hpp" "${LIB_ROOT_DIR}/src/*.h" "${LIB_ROOT_DIR}/src/*.cuh")
+    else()
+        file(GLOB_RECURSE _lib_cpp "${LIB_ROOT_DIR}/src/*.cpp" "${LIB_ROOT_DIR}/src/*.c")
+        file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/src/*.hpp" "${LIB_ROOT_DIR}/src/*.h")
+    endif()
 
     string(REPLACE "::" "_" NAME_ALIAS_UNDERSCORES "${NAME_ALIAS}")
     string(TOLOWER "${NAME_ALIAS_UNDERSCORES}" _lib_name_lower)

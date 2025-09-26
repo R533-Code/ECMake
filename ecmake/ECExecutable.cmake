@@ -11,7 +11,7 @@ function(ec_add_executable NAME)
 
     ec_parse_with_defaults(EXEC
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
-        "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
+        "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA" # options
         "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
         "" # multi value
         ${ARGN}
@@ -25,8 +25,14 @@ function(ec_add_executable NAME)
 
     ec_parse_version("${EXEC_VERSION}" EXEC_VERSION)
 
-    file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.c" "${EXEC_ROOT_DIR}/src/*.cu")
-    file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.hpp" "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.cuh")
+    if(${EXEC_WITH_CUDA})
+        enable_language(CUDA)
+        file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.c" "${EXEC_ROOT_DIR}/src/*.cu")
+        file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.hpp" "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.cuh")
+    else()
+        file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.c")
+        file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.hpp" "${EXEC_ROOT_DIR}/src/*.h")
+    endif()
 
     if(NOT EXEC_NO_CONFIG)
         message(VERBOSE "Writing `${NAME}_config.h/cpp`...")

@@ -44,7 +44,6 @@ if(${EC_SET_FETCHCONTENT_DIR})
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-    enable_language(CUDA)
     # also log message(VERBOSE)
     set(CMAKE_MESSAGE_LOG_LEVEL VERBOSE CACHE STRING "" FORCE)
 
