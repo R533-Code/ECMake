@@ -10,9 +10,9 @@ function(ec_add_executable NAME)
     include(GNUInstallDirs)
 
     ec_parse_with_defaults(EXEC
-        "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
+        "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime" # defaults
         "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
-        "VERSION;ROOT_DIR;CXX_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
+        "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
         "" # multi value
         ${ARGN}
     )
@@ -25,7 +25,7 @@ function(ec_add_executable NAME)
 
     ec_parse_version("${EXEC_VERSION}" EXEC_VERSION)
 
-    file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp")
+    file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.cu" "${EXEC_ROOT_DIR}/src/*.c")
     file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.hpp")
 
     if(NOT EXEC_NO_CONFIG)
@@ -45,7 +45,7 @@ function(ec_add_executable NAME)
     target_include_directories(${NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
     # set properties for better defaults
-    ec_target_set_default_properties(${NAME} ${EXEC_CXX_VERSION}
+    ec_target_set_default_properties(${NAME} ${EXEC_CXX_VERSION} ${EXEC_C_VERSION}
         ${ARGN}
     )
 
