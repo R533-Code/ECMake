@@ -25,8 +25,8 @@ function(ec_add_executable NAME)
 
     ec_parse_version("${EXEC_VERSION}" EXEC_VERSION)
 
-    file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.cu" "${EXEC_ROOT_DIR}/src/*.c")
-    file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.hpp")
+    file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/src/*.cpp" "${EXEC_ROOT_DIR}/src/*.c" "${EXEC_ROOT_DIR}/src/*.cu")
+    file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/src/*.hpp" "${EXEC_ROOT_DIR}/src/*.h" "${EXEC_ROOT_DIR}/src/*.cuh")
 
     if(NOT EXEC_NO_CONFIG)
         message(VERBOSE "Writing `${NAME}_config.h/cpp`...")

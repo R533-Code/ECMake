@@ -26,7 +26,7 @@ function(ec_add_library NAME)
     ec_parse_version("${LIB_VERSION}" LIB_VERSION)
 
     file(GLOB_RECURSE _lib_cpp "${LIB_ROOT_DIR}/src/*.cpp" "${LIB_ROOT_DIR}/src/*.c" "${LIB_ROOT_DIR}/src/*.cu")
-    file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/src/*.h" "${LIB_ROOT_DIR}/src/*.hpp")
+    file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/src/*.hpp" "${LIB_ROOT_DIR}/src/*.h" "${LIB_ROOT_DIR}/src/*.cuh")
 
     string(REPLACE "::" "_" NAME_ALIAS_UNDERSCORES "${NAME_ALIAS}")
     string(TOLOWER "${NAME_ALIAS_UNDERSCORES}" _lib_name_lower)
