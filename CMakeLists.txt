@@ -57,9 +57,25 @@ if(PROJECT_IS_TOP_LEVEL)
     ec_namespace(tests)
 
     foreach(subdir ${ec_all_tests})
+        unset(_test_namespace)
+
         # strip CMakeLists.txt from name
         cmake_path(GET subdir PARENT_PATH subdir)
-        ec_add_subdirectory(${subdir})
+        cmake_path(GET subdir FILENAME subdir_name)
+
+        if(subdir_name MATCHES "basic_.*")
+            set(_test_namespace basic)
+        elseif(subdir_name MATCHES "inter_.*")
+            set(_test_namespace inter)
+        endif()
+
+        if (DEFINED _test_namespace)
+            ec_namespace(${_test_namespace})
+            ec_add_subdirectory(${subdir})
+            ec_endnamespace(${_test_namespace})
+        else()
+            ec_add_subdirectory(${subdir})
+        endif()
     endforeach()
 
     ec_list_all_targets(all_targets)

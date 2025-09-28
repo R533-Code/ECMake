@@ -1,5 +1,3 @@
 include(ECExecutable)
 
-ec_namespace(inter_exec_with_cuda)
 ec_add_executable(exec_with_cuda WITH_CUDA)
-ec_endnamespace(inter_exec_with_cuda)
