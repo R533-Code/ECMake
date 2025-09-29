@@ -65,7 +65,7 @@ function(ec_add_tests TEST_EXEC_NAME)
     
     string(STRIP "${TEST_EXEC_NAME}" TEST_EXEC_NAME)
     ec_namespace_get(current_namespace_dots "::")
-    ec_namespace_get(current_namespace "")
+    ec_namespace_get(current_namespace "-")
     set(NAME_ALIAS "${current_namespace_dots}${TEST_EXEC_NAME}")
     set(FULL_NAME "${current_namespace}${TEST_EXEC_NAME}")
     
