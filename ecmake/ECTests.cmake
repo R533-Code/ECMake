@@ -6,7 +6,7 @@ function(ec_add_tests TEST_EXEC_NAME)
     include(GNUInstallDirs)
 
     ec_parse_with_defaults(TEST
-        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR}/tests;INSTALL_COMPONENT;Runtime;LINK_WITH;<none>" # defaults
+        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/tests;CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR}/tests;INSTALL_COMPONENT;Runtime;LINK_WITH;<none>" # defaults
         "NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
         "ROOT_DIR;CXX_VERSION;TESTING_FRAMEWORK;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
         "LINK_WITH" # multi value
@@ -56,39 +56,41 @@ function(ec_add_tests TEST_EXEC_NAME)
     endif()
 
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
-        "${TEST_ROOT_DIR}/tests/*.cpp"
+        "${TEST_ROOT_DIR}/*.cpp"
     )
 
     if(NOT TEST_SOURCES)
-        message(FATAL_ERROR "No test source files found in the 'tests/' directory. Add test files to the 'tests/' folder!")
+        message(FATAL_ERROR "No test source files found in the '${TEST_ROOT_DIR}' directory. Add test files to that folder!")
     endif()
-
-    add_executable(${TEST_EXEC_NAME} ${TEST_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/_ec_deps_test/test_main.cpp")
-
+    
     string(STRIP "${TEST_EXEC_NAME}" TEST_EXEC_NAME)
-    ec_namespace_get(current_namespace "::")
-    set(NAME_ALIAS "${current_namespace}${TEST_EXEC_NAME}")
+    ec_namespace_get(current_namespace_dots "::")
+    ec_namespace_get(current_namespace "")
+    set(NAME_ALIAS "${current_namespace_dots}${TEST_EXEC_NAME}")
+    set(FULL_NAME "${current_namespace}${TEST_EXEC_NAME}")
+    
+    add_executable(${FULL_NAME} ${TEST_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/_ec_deps_test/test_main.cpp")
 
     # register the target globally so that it is accessible through
     # the global properties
-    ec_register_target(${TEST_EXEC_NAME} ${NAME_ALIAS})
+    ec_register_target(${FULL_NAME} ${NAME_ALIAS})
 
     # set properties for better defaults
-    ec_target_set_default_properties(${TEST_EXEC_NAME} ${TEST_CXX_VERSION}
+    ec_target_set_default_properties(${FULL_NAME} ${TEST_CXX_VERSION}
         ${ARGN}
     )
 
-    target_include_directories(${TEST_EXEC_NAME} PUBLIC "${TEST_ROOT_DIR}/tests")
+    target_include_directories(${FULL_NAME} PUBLIC "${TEST_ROOT_DIR}")
 
-    target_link_libraries(${TEST_EXEC_NAME} ${TEST_FRAMEWORK_LIB})
+    target_link_libraries(${FULL_NAME} ${TEST_FRAMEWORK_LIB})
 
     if(NOT TEST_LINK_WITH STREQUAL "<none>")
-        target_link_libraries(${TEST_EXEC_NAME} ${TEST_LINK_WITH})
+        target_link_libraries(${FULL_NAME} ${TEST_LINK_WITH})
     endif()
 
     if(NOT TEST_NO_INSTALL)
         # install the target
-        install(TARGETS ${TEST_EXEC_NAME}
+        install(TARGETS ${FULL_NAME}
             RUNTIME DESTINATION "${TEST_INSTALL_BINDIR}"
             BUNDLE DESTINATION "${TEST_INSTALL_BINDIR}"
             COMPONENT ${TEST_INSTALL_COMPONENT}
