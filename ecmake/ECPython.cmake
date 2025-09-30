@@ -8,12 +8,13 @@ function(ec_add_python_bindings TARGET_NAME)
     ec_assert("Python must be included before calling `ec_add_python_bindings`"
         TARGET Python::Module
     )
+    set(EC_PYTHON_DEFAULT_INSTALL "${CMAKE_INSTALL_BINDIR}" CACHE PATH "")
 
     ec_parse_with_defaults(
         BIND
-        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};SRC_DIR;bind_python;STUB_PATTERN_FILES;<none>;LINK_WITH;<none>;BIND_PREFIX;bind_python_;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime"
+        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};SRC_DIR;bind_python;STUB_PATTERN_FILES;<none>;LINK_WITH;<none>;BIND_PREFIX;bind_python_;INSTALL_BINDIR;${EC_PYTHON_DEFAULT_INSTALL};INSTALL_COMPONENT;Runtime;STUB_PYTHON_PATH;<none>;STUB_MODULE_NAME;<none>"
         "NO_REGISTER_STUB_FILES;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC" # flags
-        "ROOT_DIR;BINDING_FRAMEWORK;SRC_DIR;BIND_PREFIX;INSTALL_BINDIR;INSTALL_COMPONENT" # one-value
+        "ROOT_DIR;BINDING_FRAMEWORK;SRC_DIR;BIND_PREFIX;INSTALL_BINDIR;INSTALL_COMPONENT;STUB_PYTHON_PATH;STUB_MODULE_NAME" # one-value
         "STUB_PATTERN_FILES;LINK_WITH" # multi-value
         ${ARGN}
     )
@@ -89,10 +90,11 @@ function(ec_add_python_bindings TARGET_NAME)
     # ########################
     if(NOT BIND_NO_REGISTER_STUB_FILES AND NOT "${BIND_STUB_PATTERN_FILES}" STREQUAL "<none>")
         get_property(_INIT GLOBAL PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS")
+
         if(_INIT STREQUAL "NOTFOUND")
             set_property(GLOBAL PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS" "")
         endif()
-        
+
         set_property(GLOBAL
             APPEND PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS"
             "${BIND_STUB_PATTERN_FILES}"
@@ -115,19 +117,39 @@ function(ec_add_python_bindings TARGET_NAME)
         nanobind_add_module(${TARGET_NAME}
             ${BINDING_HEADERS} ${BINDING_SOURCES} ${BINDINGS_MAIN}
         )
-
-        # generate stub file
-        nanobind_add_stub(
-            "${TARGET_NAME}_stub"
-            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.pyi"
-            MODULE ${TARGET_NAME}
-            PATTERN_FILE ${_NB_PATTERN_FILE}
-            PYTHON_PATH "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-            DEPENDS ${TARGET_NAME}
-        )
     elseif(BIND_BINDING_FRAMEWORK STREQUAL "pybind11")
         pybind11_add_module(${TARGET_NAME}
             ${BINDING_HEADERS} ${BINDING_SOURCES} ${BINDINGS_MAIN}
+        )
+    endif()
+
+    if(NOT BIND_NO_INSTALL)
+        # install the target
+        install(TARGETS ${TARGET_NAME}
+            LIBRARY DESTINATION ${BIND_INSTALL_BINDIR}
+            BUNDLE DESTINATION ${BIND_INSTALL_BINDIR}
+            COMPONENT ${BIND_INSTALL_COMPONENT}
+        )
+    endif()
+
+    if(BIND_STUB_PYTHON_PATH STREQUAL "<none>")
+        set(BIND_STUB_PYTHON_PATH "$<TARGET_FILE_DIR:${TARGET_NAME}>")
+    endif()
+
+    if(BIND_STUB_MODULE_NAME STREQUAL "<none>")
+        set(BIND_STUB_MODULE_NAME "${TARGET_NAME}")
+    endif()
+
+    if(BIND_BINDING_FRAMEWORK STREQUAL "nanobind")
+        # generate stub file
+        nanobind_add_stub(
+            "${TARGET_NAME}_stub"
+            INSTALL_TIME
+            OUTPUT "${BIND_INSTALL_BINDIR}/${TARGET_NAME}.pyi"
+            MODULE "${BIND_STUB_MODULE_NAME}"
+            PATTERN_FILE ${_NB_PATTERN_FILE}
+            PYTHON_PATH "${BIND_STUB_PYTHON_PATH}"
+            DEPENDS ${TARGET_NAME}
         )
     endif()
 
@@ -152,19 +174,5 @@ function(ec_add_python_bindings TARGET_NAME)
         target_link_libraries(${TARGET_NAME}
             ${BIND_LINK_WITH}
         )
-    endif()
-
-    if(NOT LIB_NO_INSTALL)
-        # install the target
-        install(TARGETS ${TARGET_NAME}
-            LIBRARY DESTINATION ${BIND_INSTALL_BINDIR}
-            BUNDLE DESTINATION ${BIND_INSTALL_BINDIR}
-            COMPONENT ${BIND_INSTALL_COMPONENT}
-        )
-
-        if(TARGET "${TARGET_NAME}_stub")
-            install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.pyi"
-                DESTINATION ${BIND_INSTALL_BINDIR})
-        endif()
     endif()
 endfunction()
