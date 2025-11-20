@@ -296,6 +296,40 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
     set(${OUT} "${hit}" PARENT_SCOPE)
 endfunction()
 
+# Collect all shared lib targets linked (directly/indirectly) to ROOT_TARGET
+# and add POST_BUILD copy commands that copy those .so/.dll/.dylib files
+# next to ROOT_TARGET's own binary.
+function(ec_copy_dependencies ROOT_TARGET)
+    # ROOT_TARGET must be a known CMake target
+    ec_assert(
+        "ec_copy_linked_shared_libs: ROOT_TARGET must be a valid target"
+        TARGET ${ROOT_TARGET}
+    )
+
+    # ROOT_TARGET must have a runtime directory (executable or shared library)
+    get_target_property(_type ${ROOT_TARGET} TYPE)
+    ec_assert(
+        "ec_copy_linked_shared_libs: ROOT_TARGET must be EXECUTABLE or SHARED_LIBRARY"
+        _type STREQUAL "EXECUTABLE" OR _type STREQUAL "SHARED_LIBRARY"
+    )
+
+    ec_get_linked_shared_targets(${ROOT_TARGET} _ec_shared_deps)
+    if(NOT _ec_shared_deps)
+        return()
+    endif()
+
+    foreach(_dep IN LISTS _ec_shared_deps)
+        add_custom_command(
+            TARGET ${ROOT_TARGET}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:${_dep}>
+            $<TARGET_FILE_DIR:${ROOT_TARGET}>
+            VERBATIM
+        )
+    endforeach()
+endfunction()
+
 # Writes a configuration file containing target/version information.
 # ALIAS_NAME: The namespace qualified name of the target, '::' will be replaced with '_'
 # TARGET_NAME: The target name
@@ -426,7 +460,7 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     set_target_properties(${NAME} PROPERTIES
         CXX_STANDARD "${CXX_VERSION}"
         CXX_STANDARD_REQUIRED TRUE
-        
+
         C_STANDARD "${C_VERSION}"
         C_STANDARD_REQUIRED TRUE
 
