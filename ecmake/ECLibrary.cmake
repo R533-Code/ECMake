@@ -29,7 +29,7 @@ function(ec_add_library NAME)
 
     ec_parse_version("${LIB_VERSION}" LIB_VERSION)
 
-    if(${EXEC_WITH_CUDA})
+    if(${LIB_WITH_CUDA})
         enable_language(CUDA)
         file(GLOB_RECURSE _lib_cpp "${LIB_ROOT_DIR}/*.cpp" "${LIB_ROOT_DIR}/*.c" "${LIB_ROOT_DIR}/*.cu")
         file(GLOB_RECURSE _lib_hpp "${LIB_ROOT_DIR}/*.hpp" "${LIB_ROOT_DIR}/*.h" "${LIB_ROOT_DIR}/*.cuh")
