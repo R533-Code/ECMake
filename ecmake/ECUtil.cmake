@@ -451,7 +451,7 @@ endfunction()
 # CXX_VERSION: The C++ version to use when compiling the target
 function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     cmake_parse_arguments("INT"
-        "NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX"
+        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX"
         ""
         ""
         ${ARGN}
@@ -469,6 +469,9 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN hidden
 
+        # always build position independent code
+        POSITION_INDEPENDENT_CODE TRUE
+
         # no lib prefix on linux
         PREFIX ""
     )
@@ -480,21 +483,6 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
             DEBUG_POSTFIX "d"
         )
         message(VERBOSE "Adding debug postfix")
-    endif()
-
-    get_target_property(libtype ${NAME} TYPE)
-
-    if(libtype STREQUAL "SHARED_LIBRARY")
-        if(NOT INT_NO_PIC)
-            set_target_properties(${NAME} PROPERTIES
-                POSITION_INDEPENDENT_CODE TRUE
-            )
-            message(VERBOSE "Adding position independent code")
-        else()
-            # shared libraries must always be compiled with POSITION_INDEPENDENT_CODE
-            # set to true.
-            message(WARNING "Dynamic libraries cannot have the NO_PIC option present!")
-        endif()
     endif()
 
     if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
