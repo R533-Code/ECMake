@@ -24,3 +24,52 @@ ec_add_executable(ExecName)
 `ECMake` provides `ec_add_tests`, which supports `Catch2`, `doctest` and `gtest` out of the box.
 
 `ECMake` provides `ec_add_python_bindings`, which supports `pybind11` and `nanobind` out of the box.
+
+# Documentation:
+## `ec_add_executable`:
+### Arguments:
+- `VERSION`: a dot separated version string
+  - Default: `0.0.0.0`
+  - Example: `0.2`, `1.0.0.2`
+- `ROOT_DIR`: the directory in which the source code is
+  - Default: `${CMAKE_CURRENT_SOURCE_DIR}/src`
+- `CXX_VERSION`: the C++ standard version (`11`, `14`, `17`, `20`, ...)
+  - Default: `20`
+- `C_VERSION`: the C standard version
+  - Default: `99`
+- `INSTALL_BINDIR`: the install directory
+  - Default: `${CMAKE_INSTALL_BINDIR}`
+
+### Options:
+- `WITH_CUDA`: add CUDA support, using `.cu` and `.cuh` files in the root directory
+- `NO_CONFIG`: do not generate a config file for the executable
+- `NO_INSTALL`: do not install the executable when INSTALL is run
+- `NO_PIC`: do not make the executable's code position independent
+- `NO_CONFORMANT_PREPROCESSOR_MSVC`: do not use the conformant preprocessor on `MSVC`
+- `NO_DEBUG_POSTFIX`: do not postfix the output name with `d` on debug
+
+## `ec_add_library`:
+### Arguments:
+- `LIBRARY_KIND`: SHARED|STATIC or empty string, specifies the library kind
+  - An empty string uses `BUILD_SHARED_LIBS` to decide the kind
+  - On empty and shared, an export file is generated for exporting macros. On Linux and MacOS, symbols are marked as private by default: the export macros are needed.
+  - Default: empty string
+- `VERSION`: a dot separated version string
+  - Default: `0.0.0.0`
+  - Example: `0.2`, `1.0.0.2`
+- `ROOT_DIR`: the directory in which the source code is
+  - Default: `${CMAKE_CURRENT_SOURCE_DIR}/src`
+- `CXX_VERSION`: the C++ standard version (`11`, `14`, `17`, `20`, ...)
+  - Default: `20`
+- `C_VERSION`: the C standard version
+  - Default: `99`
+- `INSTALL_BINDIR`: the install directory
+  - Default: `${CMAKE_INSTALL_BINDIR}`
+
+### Options:
+- `WITH_CUDA`: add CUDA support, using `.cu` and `.cuh` files in the root directory
+- `NO_CONFIG`: do not generate a config file for the executable
+- `NO_INSTALL`: do not install the executable when INSTALL is run
+- `NO_PIC`: do not make the executable's code position independent
+- `NO_CONFORMANT_PREPROCESSOR_MSVC`: do not use the conformant preprocessor on `MSVC`
+- `NO_DEBUG_POSTFIX`: do not postfix the output name with `d` on debug
