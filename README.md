@@ -28,6 +28,7 @@ ec_add_executable(ExecName)
 # Documentation:
 ## `ec_add_executable`:
 ### Arguments:
+- `OUT`: out variable of the full target name (useful when namespaces are used)
 - `VERSION`: a dot separated version string
   - Default: `0.0.0.0`
   - Example: `0.2`, `1.0.0.2`
@@ -50,6 +51,7 @@ ec_add_executable(ExecName)
 
 ## `ec_add_library`:
 ### Arguments:
+- `OUT`: out variable of the full target name (useful when namespaces are used)
 - `LIBRARY_KIND`: SHARED|STATIC or empty string, specifies the library kind
   - An empty string uses `BUILD_SHARED_LIBS` to decide the kind
   - On empty and shared, an export file is generated for exporting macros. On Linux and MacOS, symbols are marked as private by default: the export macros are needed.
