@@ -6,9 +6,9 @@ function(ec_add_tests TEST_EXEC_NAME)
     include(GNUInstallDirs)
 
     ec_parse_with_defaults(TEST
-        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/tests;CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR}/tests;INSTALL_COMPONENT;Runtime;LINK_WITH;<none>" # defaults
+        "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/tests;CXX_VERSION;20;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR}/tests;INSTALL_COMPONENT;Runtime;LINK_WITH;<none>;OUT;<none>" # defaults
         "NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX" # options
-        "ROOT_DIR;CXX_VERSION;TESTING_FRAMEWORK;INSTALL_BINDIR;INSTALL_COMPONENT" # one value
+        "ROOT_DIR;CXX_VERSION;TESTING_FRAMEWORK;INSTALL_BINDIR;INSTALL_COMPONENT;OUT" # one value
         "LINK_WITH" # multi value
         ${ARGN}
     )
@@ -86,6 +86,10 @@ function(ec_add_tests TEST_EXEC_NAME)
 
     if(NOT TEST_LINK_WITH STREQUAL "<none>")
         target_link_libraries(${FULL_NAME} ${TEST_LINK_WITH})
+    endif()
+    
+    if(NOT TEST_OUT STREQUAL "<none>")
+        set(${TEST_OUT} ${FULL_NAME} PARENT_SCOPE)
     endif()
 
     if(NOT TEST_NO_INSTALL)
