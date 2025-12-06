@@ -10,10 +10,10 @@ function(ec_add_library NAME)
     include(GNUInstallDirs)
 
     ec_parse_with_defaults(LIB
-        "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/src;CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime;LIBRARY_KIND;\"\"" # defaults
+        "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/src;CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime;LIBRARY_KIND;\"\";LINK_WITH;<none>" # defaults
         "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA" # options
         "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT;LIBRARY_KIND" # one value
-        "" # multi value
+        "LINK_WITH" # multi value
         ${ARGN}
     )
 
@@ -79,6 +79,10 @@ function(ec_add_library NAME)
 
     target_include_directories(${FULL_NAME} SYSTEM PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
     target_include_directories(${FULL_NAME} PUBLIC "${LIB_ROOT_DIR}")
+
+    if(NOT LIB_LINK_WITH STREQUAL "<none>")
+        target_link_libraries(${FULL_NAME} ${LIB_LINK_WITH})
+    endif()
 
     if(NOT LIB_NO_INSTALL)
         # install the target
