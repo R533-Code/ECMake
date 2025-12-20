@@ -11,7 +11,7 @@ function(ec_add_executable NAME)
 
     ec_parse_with_defaults(EXEC
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/src;CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime;LINK_WITH;<none>;OUT;<none>" # defaults
-        "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA" # options
+        "NO_CONFIG;NO_INSTALL;NO_PIC;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA;NO_COPY_DEPENDENCIES" # options
         "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT;OUT" # one value
         "LINK_WITH" # multi value
         ${ARGN}
@@ -78,6 +78,10 @@ function(ec_add_executable NAME)
 
     if(NOT EXEC_OUT STREQUAL "<none>")
         set(${EXEC_OUT} ${FULL_NAME} PARENT_SCOPE)
+    endif()
+
+    if (NOT EXEC_NO_COPY_DEPENDENCIES)
+        ec_copy_dependencies(${FULL_NAME})
     endif()
 
     message(VERBOSE "Created executable ${FULL_ALIAS_DOTS}.")
