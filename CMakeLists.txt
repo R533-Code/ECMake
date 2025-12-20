@@ -36,6 +36,7 @@ include(ECNamespace)
 include(ECExecutable)
 include(ECLibrary)
 include(ECPython)
+include(ECvcpkg)
 
 if(${EC_SET_FETCHCONTENT_DIR})
     set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.build_cache/fetch_content/"
