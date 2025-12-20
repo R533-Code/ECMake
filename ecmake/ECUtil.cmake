@@ -302,14 +302,14 @@ endfunction()
 function(ec_copy_dependencies ROOT_TARGET)
     # ROOT_TARGET must be a known CMake target
     ec_assert(
-        "ec_copy_linked_shared_libs: ROOT_TARGET must be a valid target"
+        "ec_copy_dependencies: ROOT_TARGET must be a valid target"
         TARGET ${ROOT_TARGET}
     )
 
     # ROOT_TARGET must have a runtime directory (executable or shared library)
     get_target_property(_type ${ROOT_TARGET} TYPE)
     ec_assert(
-        "ec_copy_linked_shared_libs: ROOT_TARGET must be EXECUTABLE or SHARED_LIBRARY"
+        "ec_copy_dependencies: ROOT_TARGET must be EXECUTABLE or SHARED_LIBRARY"
         _type STREQUAL "EXECUTABLE" OR _type STREQUAL "SHARED_LIBRARY"
     )
 
