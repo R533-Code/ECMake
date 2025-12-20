@@ -11,7 +11,7 @@ function(ec_add_library NAME)
 
     ec_parse_with_defaults(LIB
         "VERSION;0.0.0.0;ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR}/src;CXX_VERSION;20;C_VERSION;99;INSTALL_BINDIR;${CMAKE_INSTALL_BINDIR};INSTALL_COMPONENT;Runtime;LIBRARY_KIND;\"\";LINK_WITH;<none>;OUT;<none>" # defaults
-        "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA" # options
+        "NO_CONFIG;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;WITH_CUDA;NO_COPY_DEPENDENCIES" # options
         "VERSION;ROOT_DIR;CXX_VERSION;C_VERSION;INSTALL_BINDIR;INSTALL_COMPONENT;LIBRARY_KIND;OUT" # one value
         "LINK_WITH" # multi value
         ${ARGN}
@@ -88,13 +88,18 @@ function(ec_add_library NAME)
         set(${LIB_OUT} ${FULL_NAME} PARENT_SCOPE)
     endif()
 
-    if(NOT LIB_NO_INSTALL)    
+    if(NOT LIB_NO_INSTALL)
         # install the target
         install(TARGETS ${FULL_NAME}
             RUNTIME DESTINATION ${LIB_INSTALL_BINDIR}
             BUNDLE DESTINATION ${LIB_INSTALL_BINDIR}
             COMPONENT ${LIB_INSTALL_COMPONENT}
         )
+    endif()
+
+    get_target_property(_lib_type ${FULL_NAME} TYPE)
+    if(NOT LIB_NO_COPY_DEPENDENCIES AND _lib_type STREQUAL "SHARED_LIBRARY")
+        ec_copy_dependencies(${FULL_NAME})
     endif()
 
     message(VERBOSE "Created library ${FULL_ALIAS_DOTS}.")
