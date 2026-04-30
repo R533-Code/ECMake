@@ -266,7 +266,7 @@ function(ec_get_aliased_target ALIAS OUT_VAR)
 
     get_property(_has TARGET "${ALIAS}" PROPERTY ALIASED_TARGET SET)
 
-    if(${has})
+    if(${_has})
         get_target_property(_t "${ALIAS}" ALIASED_TARGET)
         set(${OUT_VAR} "${_t}" PARENT_SCOPE)
     else()
