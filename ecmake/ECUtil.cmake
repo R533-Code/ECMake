@@ -275,45 +275,48 @@ function(ec_get_aliased_target ALIAS OUT_VAR)
 endfunction()
 
 function(ec_get_linked_shared_targets ROOT_TARGET OUT)
-    set(seen)
-    set(hit)
+    set(_queue "${ROOT_TARGET}")
+    set(_seen  "")
+    set(_hit   "")
 
-    function(_walk t)
-        if(NOT TARGET "${t}")
-            return()
+    while(_queue)
+        # Dequeue the front item.
+        list(POP_FRONT _queue _current)
+
+        # Resolve alias to real target name.
+        ec_get_aliased_target("${_current}" _current)
+
+        # Skip if already visited.
+        if("${_current}" IN_LIST _seen)
+            continue()
+        endif()
+        list(APPEND _seen "${_current}")
+
+        if(NOT TARGET "${_current}")
+            continue()
         endif()
 
-        ec_get_aliased_target(${t} t)
-
-        if("${t}" IN_LIST seen)
-            return()
-        endif()
-
-        list(APPEND seen "${t}")
-
-        get_target_property(_type "${t}" TYPE)
-
+        get_target_property(_type "${_current}" TYPE)
         if(_type STREQUAL "SHARED_LIBRARY")
-            list(APPEND hit "${t}")
+            list(APPEND _hit "${_current}")
         endif()
 
-        foreach(prop IN ITEMS LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
-            get_target_property(_deps "${t}" ${prop})
-
-            foreach(d IN LISTS _deps)
-                if(TARGET "${d}")
-                    _walk("${d}")
+        # Enqueue all linked dependencies.
+        foreach(_prop IN ITEMS LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
+            get_target_property(_deps "${_current}" ${_prop})
+            if(NOT _deps)
+                continue()
+            endif()
+            foreach(_dep IN LISTS _deps)
+                if(TARGET "${_dep}" AND NOT "${_dep}" IN_LIST _seen)
+                    list(APPEND _queue "${_dep}")
                 endif()
             endforeach()
         endforeach()
+    endwhile()
 
-        set(seen "${seen}" PARENT_SCOPE)
-        set(hit "${hit}" PARENT_SCOPE)
-    endfunction()
-
-    _walk("${ROOT_TARGET}")
-    list(REMOVE_DUPLICATES hit)
-    set(${OUT} "${hit}" PARENT_SCOPE)
+    list(REMOVE_DUPLICATES _hit)
+    set(${OUT} "${_hit}" PARENT_SCOPE)
 endfunction()
 
 # Collect all shared lib targets linked (directly/indirectly) to ROOT_TARGET
