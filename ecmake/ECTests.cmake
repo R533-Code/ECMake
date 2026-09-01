@@ -112,6 +112,10 @@ function(ec_add_tests TEST_EXEC_NAME)
         set(${TEST_OUT} ${FULL_NAME} PARENT_SCOPE)
     endif()
 
+    if (NOT TEST_NO_COPY_DEPENDENCIES)
+        ec_copy_dependencies(${FULL_NAME})
+    endif()
+
     if(NOT TEST_NO_INSTALL)
         # install the target
         install(TARGETS ${FULL_NAME}
