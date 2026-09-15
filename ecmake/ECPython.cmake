@@ -62,10 +62,10 @@ function(ec_add_python_bindings TARGET_NAME)
     string(TOUPPER "${BIND_BINDING_FRAMEWORK}" BIND_FRAMEWORK_UPPER)
 
     if(BIND_BINDING_FRAMEWORK STREQUAL "nanobind")
-        set(BINDINGS_MAIN "${CMAKE_CURRENT_BINARY_DIR}/_ec_python/nanobind_bind_main.cpp")
+        set(BINDINGS_MAIN "${CMAKE_CURRENT_BINARY_DIR}/_ec_python/${TARGET_NAME}_nanobind_bind_main.cpp")
         set(BINDINGS_MAIN_MOD_DECL "NB_MODULE(${TARGET_NAME}, mod)")
     elseif(BIND_BINDING_FRAMEWORK STREQUAL "pybind11")
-        set(BINDINGS_MAIN "${CMAKE_CURRENT_BINARY_DIR}/_ec_python/pybind11_bind_main.cpp")
+        set(BINDINGS_MAIN "${CMAKE_CURRENT_BINARY_DIR}/_ec_python/${TARGET_NAME}_pybind11_bind_main.cpp")
         set(BINDINGS_MAIN_MOD_DECL "PYBIND11_MODULE(${TARGET_NAME}, mod, pybind11::mod_gil_not_used())")
 
         if(NOT BIND_STUB_PATTERN_FILES STREQUAL "<none>")
@@ -121,7 +121,7 @@ function(ec_add_python_bindings TARGET_NAME)
         )
     endif()
 
-    set(output "${CMAKE_CURRENT_BINARY_DIR}/_ec_bind/${BIND_BINDING_FRAMEWORK}_stubs.txt")
+    set(output "${CMAKE_CURRENT_BINARY_DIR}/_ec_bind/${TARGET_NAME}_${BIND_BINDING_FRAMEWORK}_stubs.txt")
     file(WRITE "${output}" "")
 
     get_property(_ALL_STUBS GLOBAL PROPERTY "EC_${BIND_FRAMEWORK_UPPER}_ALL_STUBS")
