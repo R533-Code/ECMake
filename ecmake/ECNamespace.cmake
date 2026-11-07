@@ -46,20 +46,24 @@ function(ec_get_target NAME OUT_VAR)
 
     while(TRUE)
         set(_target "")
+
         foreach(_namespace IN LISTS _current_namespace)
             string(APPEND _target "${_namespace}-")
         endforeach()
 
         set(_target "${_target}${NAME}")
+
         if(TARGET "${_target}")
             set(${OUT_VAR} "${_target}" PARENT_SCOPE)
             return()
         endif()
 
         list(LENGTH _current_namespace _length)
+
         if(_length EQUAL 0)
             break()
         endif()
+
         list(POP_BACK _current_namespace)
     endwhile()
 
@@ -67,7 +71,6 @@ function(ec_get_target NAME OUT_VAR)
         FALSE
     )
 endfunction(ec_get_target)
-
 
 # Returns the current namespace.
 # OUT_VAR: The output variable

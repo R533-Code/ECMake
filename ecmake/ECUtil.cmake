@@ -126,10 +126,12 @@ endfunction()
 function(ec_write_file_if_changed PATH CONTENT)
     if(EXISTS "${PATH}")
         file(READ "${PATH}" _old_content)
+
         if(_old_content STREQUAL CONTENT)
             return()
         endif()
     endif()
+
     file(WRITE "${PATH}" "${CONTENT}")
 endfunction()
 
@@ -141,11 +143,13 @@ endfunction()
 # ...: The items to link (as passed to LINK_WITH)
 function(ec_target_link_with TARGET DEFAULT_SCOPE)
     set(_items ${ARGN})
+
     if(NOT _items OR _items STREQUAL "<none>")
         return()
     endif()
 
     list(GET _items 0 _first)
+
     if(NOT _first MATCHES "^(PUBLIC|PRIVATE|INTERFACE)$")
         list(PREPEND _items ${DEFAULT_SCOPE})
     endif()
@@ -223,18 +227,21 @@ macro(ec_build_dylib VALUE)
     else()
         ec_property_push_back(EC_BUILD_SHARED_LIBS_STACK "UNDEFINED")
     endif()
+
     set(BUILD_SHARED_LIBS ${VALUE})
 endmacro()
 
 # Restores `BUILD_SHARED_LIBS` to its value before the matching call to `ec_build_dylib`
 macro(ec_restore_dylib)
     ec_property_pop_back(EC_BUILD_SHARED_LIBS_STACK _ec_old_build_shared_libs)
+
     if(_ec_old_build_shared_libs STREQUAL "UNDEFINED")
         unset(BUILD_SHARED_LIBS)
     else()
         string(REGEX REPLACE "^DEFINED:" "" _ec_old_build_shared_libs "${_ec_old_build_shared_libs}")
         set(BUILD_SHARED_LIBS "${_ec_old_build_shared_libs}")
     endif()
+
     unset(_ec_old_build_shared_libs)
 endmacro()
 
@@ -335,8 +342,8 @@ endfunction()
 
 function(ec_get_linked_shared_targets ROOT_TARGET OUT)
     set(_queue "${ROOT_TARGET}")
-    set(_seen  "")
-    set(_hit   "")
+    set(_seen "")
+    set(_hit "")
 
     while(_queue)
         # Dequeue the front item.
@@ -349,6 +356,7 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
         if("${_current}" IN_LIST _seen)
             continue()
         endif()
+
         list(APPEND _seen "${_current}")
 
         if(NOT TARGET "${_current}")
@@ -356,6 +364,7 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
         endif()
 
         get_target_property(_type "${_current}" TYPE)
+
         if(_type STREQUAL "SHARED_LIBRARY")
             list(APPEND _hit "${_current}")
         endif()
@@ -363,9 +372,11 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
         # Enqueue all linked dependencies.
         foreach(_prop IN ITEMS LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
             get_target_property(_deps "${_current}" ${_prop})
+
             if(NOT _deps)
                 continue()
             endif()
+
             foreach(_dep IN LISTS _deps)
                 # CMake records private dependencies of static libraries as
                 # `$<LINK_ONLY:dep>` in INTERFACE_LINK_LIBRARIES: unwrap them
@@ -394,9 +405,10 @@ endfunction()
 # build tree RPATH already allows finding shared libraries.
 # ROOT_TARGET: The target next to which to copy the DLLs
 # EXCLUDE_REGEX: Optional, DLLs whose path matches this regex are not copied
-#                (must not contain `,` or `>`)
+# (must not contain `,` or `>`)
 function(ec_copy_dependencies ROOT_TARGET)
     cmake_parse_arguments(COPY "" "EXCLUDE_REGEX" "" ${ARGN})
+
     # ROOT_TARGET must be a known CMake target
     ec_assert(
         "ec_copy_dependencies: ROOT_TARGET must be a valid target"
@@ -411,12 +423,15 @@ function(ec_copy_dependencies ROOT_TARGET)
     )
 
     set(_dlls "$<TARGET_RUNTIME_DLLS:${ROOT_TARGET}>")
+
     if(COPY_EXCLUDE_REGEX)
         set(_dlls "$<FILTER:${_dlls},EXCLUDE,${COPY_EXCLUDE_REGEX}>")
     endif()
+
     add_custom_command(
         TARGET ${ROOT_TARGET}
         POST_BUILD
+
         # `copy_if_different` fails without files, so do nothing when there are no DLLs
         COMMAND "$<IF:$<BOOL:${_dlls}>,${CMAKE_COMMAND};-E;copy_if_different;${_dlls};$<TARGET_FILE_DIR:${ROOT_TARGET}>,${CMAKE_COMMAND};-E;true>"
         COMMAND_EXPAND_LISTS
@@ -547,7 +562,7 @@ endfunction()
 # CXX_VERSION: The C++ version to use when compiling the target
 # C_VERSION: The C version to use when compiling the target
 # Options (pass explicitly, not the caller's ARGN):
-#   NO_CONFORMANT_PREPROCESSOR_MSVC, NO_DEBUG_POSTFIX, NO_PIC
+# NO_CONFORMANT_PREPROCESSOR_MSVC, NO_DEBUG_POSTFIX, NO_PIC
 function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     cmake_parse_arguments("INT"
         "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;NO_PIC"
@@ -602,17 +617,20 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
         message(VERBOSE "Adding conformant preprocessor (for MSVC)")
     endif()
 endfunction()
+
 # Collects the options accepted by `ec_target_set_default_properties` that were
 # set by a caller which parsed its arguments with PREFIX.
 # PREFIX: The prefix used when parsing the caller's arguments
 # OUT_VAR: The output variable, containing the list of set options
 function(ec_get_default_property_flags PREFIX OUT_VAR)
     set(_flags)
+
     foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_DEBUG_POSTFIX NO_PIC)
         if(${PREFIX}_${_flag})
             list(APPEND _flags ${_flag})
         endif()
     endforeach()
+
     set(${OUT_VAR} "${_flags}" PARENT_SCOPE)
 endfunction()
 
@@ -622,6 +640,7 @@ endfunction()
 # CUDA runtime library to link) are lost, resulting in link errors.
 function(ec_assert_cuda_enabled)
     get_property(_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+
     if(NOT "CUDA" IN_LIST _languages)
         message(FATAL_ERROR
             "WITH_CUDA requires the CUDA language to be enabled before creating the target.

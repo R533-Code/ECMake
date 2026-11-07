@@ -24,7 +24,7 @@ include_guard(GLOBAL)
 # support.
 # PREFIX: The prefix for the output arguments
 # DEFAULTS: A list of KEY;DEFAULT value (where KEY exists in ONE_VALUE or MULTI_VALUE).
-#           A default may be empty (e.g. "KIND;;OTHER;x" gives KIND an empty default).
+# A default may be empty (e.g. "KIND;;OTHER;x" gives KIND an empty default).
 #
 # OPTIONS: The options (same as for `cmake_parse_arguments`)
 # ONE_VALUE: The single value options (same as for `cmake_parse_arguments`)

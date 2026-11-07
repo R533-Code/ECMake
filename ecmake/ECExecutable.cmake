@@ -100,7 +100,7 @@ function(ec_add_executable NAME)
         set(${EXEC_OUT} ${FULL_NAME} PARENT_SCOPE)
     endif()
 
-    if (NOT EXEC_NO_COPY_DEPENDENCIES)
+    if(NOT EXEC_NO_COPY_DEPENDENCIES)
         ec_copy_dependencies(${FULL_NAME})
     endif()
 

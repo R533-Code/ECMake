@@ -85,6 +85,7 @@ function(ec_add_python_bindings TARGET_NAME)
     )
 
     set(_binding_names)
+
     foreach(src IN LISTS BINDING_SOURCES)
         # Filename without extension
         get_filename_component(fname "${src}" NAME_WE)
@@ -99,6 +100,7 @@ function(ec_add_python_bindings TARGET_NAME)
                 "Each binding file name must be unique, as it determines the name of the binding function `${BIND_BIND_PREFIX}${fname}`."
             )
         endif()
+
         list(APPEND _binding_names "${fname}")
 
         string(APPEND _main_content
@@ -107,9 +109,11 @@ function(ec_add_python_bindings TARGET_NAME)
     endforeach()
 
     string(APPEND _main_content "\n${BINDINGS_MAIN_MOD_DECL}\n{\n")
+
     foreach(fname IN LISTS _binding_names)
         string(APPEND _main_content "  ${BIND_BIND_PREFIX}${fname}(mod);\n")
     endforeach()
+
     string(APPEND _main_content "}\n")
 
     ec_write_file_if_changed("${BINDINGS_MAIN}" "${_main_content}")
@@ -126,6 +130,7 @@ function(ec_add_python_bindings TARGET_NAME)
 
     if(NOT "${BIND_STUB_PATTERN_FILES}" STREQUAL "<none>")
         set(_own_stubs)
+
         foreach(stub IN LISTS BIND_STUB_PATTERN_FILES)
             # store absolute paths, as other modules may live in other directories
             get_filename_component(stub "${stub}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -141,9 +146,11 @@ function(ec_add_python_bindings TARGET_NAME)
             )
         endif()
     endif()
+
     list(REMOVE_DUPLICATES _stubs)
 
     set(_stub_content "")
+
     foreach(stub IN LISTS _stubs)
         file(READ "${stub}" stub_content)
         string(APPEND _stub_content "${stub_content}\n")

@@ -40,6 +40,7 @@ function(ec_add_library NAME)
     string(STRIP "${NAME}" NAME)
 
     string(TOUPPER "${LIB_LIBRARY_KIND}" LIB_LIBRARY_KIND)
+
     if(NOT "${LIB_LIBRARY_KIND}" MATCHES "^(SHARED|STATIC|)$")
         message(FATAL_ERROR "LIBRARY_KIND must be SHARED, STATIC or empty (got `${LIB_LIBRARY_KIND}`)")
     endif()
@@ -106,6 +107,7 @@ function(ec_add_library NAME)
 
     # the actual kind (LIBRARY_KIND may be empty, deferring to BUILD_SHARED_LIBS)
     get_target_property(_lib_type ${FULL_NAME} TYPE)
+
     if(_lib_type STREQUAL "STATIC_LIBRARY")
         # without this the export macro would expand to `dllimport` on Windows
         target_compile_definitions(${FULL_NAME} PUBLIC "${_lib_export_prefix}_STATIC_DEFINE")
