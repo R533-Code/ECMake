@@ -41,7 +41,7 @@ endfunction()
 
 # version is obtained from the current project, which must be
 # "ECMake", created by `add_subdirectory(".../ecmake")`.
-ec_assert("Do not include `ECMake.cmake` directly, make use of `add_subdirectory`!"
+ec_assert("Do not include ECMake modules directly, make use of `add_subdirectory`!"
     ${PROJECT_NAME} STREQUAL "ECMake"
 )
 
@@ -100,6 +100,7 @@ endfunction()
 
 # Utility function that pops a value from a global property.
 # PROP: The property name
+# OUT_VAR: Optional output variable receiving the popped value
 function(ec_property_pop_back PROP)
     get_property(_has GLOBAL PROPERTY "${PROP}" SET)
     ec_assert("Property '${PROP}' is not set" _has)
@@ -109,8 +110,47 @@ function(ec_property_pop_back PROP)
     ec_assert("Pop back on empty property '${PROP}'" _n GREATER 0)
 
     math(EXPR _i "${_n}-1")
+    list(GET _lst ${_i} _value)
     list(REMOVE_AT _lst ${_i})
     set_property(GLOBAL PROPERTY "${PROP}" "${_lst}")
+
+    if(ARGC GREATER 1)
+        set(${ARGV1} "${_value}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Writes CONTENT to PATH, only touching the file if its content changed.
+# This avoids needless recompilation of generated sources on every reconfigure.
+# PATH: The file to write
+# CONTENT: The content of the file
+function(ec_write_file_if_changed PATH CONTENT)
+    if(EXISTS "${PATH}")
+        file(READ "${PATH}" _old_content)
+        if(_old_content STREQUAL CONTENT)
+            return()
+        endif()
+    endif()
+    file(WRITE "${PATH}" "${CONTENT}")
+endfunction()
+
+# Links ITEMS to TARGET using the keyword signature of `target_link_libraries`.
+# If ITEMS does not start with PUBLIC, PRIVATE or INTERFACE, DEFAULT_SCOPE is used.
+# Always using the keyword signature avoids mixing errors with other calls.
+# TARGET: The target to link to
+# DEFAULT_SCOPE: The scope to use when ITEMS does not start with a scope keyword
+# ...: The items to link (as passed to LINK_WITH)
+function(ec_target_link_with TARGET DEFAULT_SCOPE)
+    set(_items ${ARGN})
+    if(NOT _items OR _items STREQUAL "<none>")
+        return()
+    endif()
+
+    list(GET _items 0 _first)
+    if(NOT _first MATCHES "^(PUBLIC|PRIVATE|INTERFACE)$")
+        list(PREPEND _items ${DEFAULT_SCOPE})
+    endif()
+
+    target_link_libraries(${TARGET} ${_items})
 endfunction()
 
 # Utility function that prints a property
@@ -128,7 +168,7 @@ ec_noop()
 set(EC_GLOBAL_PROPERTIES "EC_ALL_TARGETS;EC_ALL_EXECUTABLES;EC_ALL_LIBRARIES;EC_ALL_LIBRARIES_STATIC;EC_ALL_LIBRARIES_DYNAMIC;EC_NAMESPACE_STACK;EC_ADD_SUBDIRECTORY_GUARD")
 
 # initialize all global properties to an empty string
-foreach(_ec_global_prop EC_GLOBAL_PROPERTIES)
+foreach(_ec_global_prop IN LISTS EC_GLOBAL_PROPERTIES)
     set_property(GLOBAL PROPERTY ${_ec_global_prop} "")
 endforeach()
 
@@ -172,17 +212,31 @@ endmacro()
 # ########################
 ec_noop()
 
-# Sets `BUILD_SHARED_LIBS` to a specific value after caching its old one.
+# Sets `BUILD_SHARED_LIBS` to a specific value in the current scope, after saving
+# its old value on a stack (calls can be nested).
+# Only a normal variable is set: the cache is never modified.
+# Must be paired with `ec_restore_dylib` in the same scope.
 # VALUE: TRUE for dynamic libraries or FALSE for static libraries
-function(ec_build_dylib VALUE)
-    set(OLD_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}" CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS "${VALUE}" CACHE BOOL "" FORCE)
-endfunction()
+macro(ec_build_dylib VALUE)
+    if(DEFINED BUILD_SHARED_LIBS)
+        ec_property_push_back(EC_BUILD_SHARED_LIBS_STACK "DEFINED:${BUILD_SHARED_LIBS}")
+    else()
+        ec_property_push_back(EC_BUILD_SHARED_LIBS_STACK "UNDEFINED")
+    endif()
+    set(BUILD_SHARED_LIBS ${VALUE})
+endmacro()
 
-# Restores `BUILD_SHARED_LIBS` to its value before the call to `lars_build_dylib`
-function(ec_restore_dylib)
-    set(BUILD_SHARED_LIBS "${OLD_BUILD_SHARED_LIBS}" CACHE BOOL "" FORCE)
-endfunction()
+# Restores `BUILD_SHARED_LIBS` to its value before the matching call to `ec_build_dylib`
+macro(ec_restore_dylib)
+    ec_property_pop_back(EC_BUILD_SHARED_LIBS_STACK _ec_old_build_shared_libs)
+    if(_ec_old_build_shared_libs STREQUAL "UNDEFINED")
+        unset(BUILD_SHARED_LIBS)
+    else()
+        string(REGEX REPLACE "^DEFINED:" "" _ec_old_build_shared_libs "${_ec_old_build_shared_libs}")
+        set(BUILD_SHARED_LIBS "${_ec_old_build_shared_libs}")
+    endif()
+    unset(_ec_old_build_shared_libs)
+endmacro()
 
 # Adds a CMake subdirectory. This is exactly the same as `add_subdirectory`
 # with the only difference being that adding the same subdirectory twice
@@ -196,10 +250,15 @@ function(ec_add_subdirectory SUBDIR)
         ec_property_push_back(EC_ADD_SUBDIRECTORY_GUARD "${_abs_path}")
         message(VERBOSE "Adding subdirectory: `${_abs_path}`")
 
-        get_filename_component(_name "${SUBDIR}" NAME)
+        # the binary directory includes a hash of the absolute path, so that two
+        # different directories with the same name (e.g. `a/utils` and `b/utils`)
+        # do not collide
+        get_filename_component(_name "${_abs_path}" NAME)
+        string(SHA1 _hash "${_abs_path}")
+        string(SUBSTRING "${_hash}" 0 8 _hash)
         add_subdirectory(
             "${SUBDIR}"
-            "${CMAKE_BINARY_DIR}/_ec_deps/${_name}"
+            "${CMAKE_BINARY_DIR}/_ec_deps/${_name}-${_hash}"
         )
     else()
         message(VERBOSE "Skipping already-added: `${_abs_path}`")
@@ -233,21 +292,21 @@ function(ec_register_target TARGET ALIAS)
     get_target_property(libtype ${TARGET} TYPE)
 
     if(libtype STREQUAL "SHARED_LIBRARY")
-        if(NOT TARGET ALIAS)
+        if(NOT TARGET "${ALIAS}")
             add_library("${ALIAS}" ALIAS "${TARGET}")
         endif()
 
         ec_property_push_back(EC_ALL_LIBRARIES "${ALIAS}")
         ec_property_push_back(EC_ALL_LIBRARIES_DYNAMIC "${ALIAS}")
     elseif(libtype STREQUAL "STATIC_LIBRARY")
-        if(NOT TARGET ALIAS)
+        if(NOT TARGET "${ALIAS}")
             add_library("${ALIAS}" ALIAS "${TARGET}")
         endif()
 
         ec_property_push_back(EC_ALL_LIBRARIES "${ALIAS}")
         ec_property_push_back(EC_ALL_LIBRARIES_STATIC "${ALIAS}")
     elseif(libtype STREQUAL "EXECUTABLE")
-        if(NOT TARGET ALIAS)
+        if(NOT TARGET "${ALIAS}")
             add_executable("${ALIAS}" ALIAS "${TARGET}")
         endif()
 
@@ -308,6 +367,12 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
                 continue()
             endif()
             foreach(_dep IN LISTS _deps)
+                # CMake records private dependencies of static libraries as
+                # `$<LINK_ONLY:dep>` in INTERFACE_LINK_LIBRARIES: unwrap them
+                if(_dep MATCHES "^\\$<LINK_ONLY:(.+)>$")
+                    set(_dep "${CMAKE_MATCH_1}")
+                endif()
+
                 if(TARGET "${_dep}" AND NOT "${_dep}" IN_LIST _seen)
                     list(APPEND _queue "${_dep}")
                 endif()
@@ -319,38 +384,44 @@ function(ec_get_linked_shared_targets ROOT_TARGET OUT)
     set(${OUT} "${_hit}" PARENT_SCOPE)
 endfunction()
 
-# Collect all shared lib targets linked (directly/indirectly) to ROOT_TARGET
-# and add POST_BUILD copy commands that copy those .so/.dll/.dylib files
-# next to ROOT_TARGET's own binary.
+# Adds a POST_BUILD command that copies all the runtime DLLs ROOT_TARGET depends
+# on (directly or indirectly) next to ROOT_TARGET's own binary.
+#
+# The list of DLLs is computed at generation time (`$<TARGET_RUNTIME_DLLS>`), so
+# links added after this call, private dependencies of static libraries and
+# imported shared libraries are all taken into account.
+# This only does something on DLL platforms (Windows): on other platforms the
+# build tree RPATH already allows finding shared libraries.
+# ROOT_TARGET: The target next to which to copy the DLLs
+# EXCLUDE_REGEX: Optional, DLLs whose path matches this regex are not copied
+#                (must not contain `,` or `>`)
 function(ec_copy_dependencies ROOT_TARGET)
+    cmake_parse_arguments(COPY "" "EXCLUDE_REGEX" "" ${ARGN})
     # ROOT_TARGET must be a known CMake target
     ec_assert(
         "ec_copy_dependencies: ROOT_TARGET must be a valid target"
         TARGET ${ROOT_TARGET}
     )
 
-    # ROOT_TARGET must have a runtime directory (executable or shared library)
+    # ROOT_TARGET must have a runtime directory (executable or shared/module library)
     get_target_property(_type ${ROOT_TARGET} TYPE)
     ec_assert(
-        "ec_copy_dependencies: ROOT_TARGET must be EXECUTABLE or SHARED_LIBRARY"
-        _type STREQUAL "EXECUTABLE" OR _type STREQUAL "SHARED_LIBRARY"
+        "ec_copy_dependencies: ROOT_TARGET must be EXECUTABLE, SHARED_LIBRARY or MODULE_LIBRARY"
+        _type STREQUAL "EXECUTABLE" OR _type STREQUAL "SHARED_LIBRARY" OR _type STREQUAL "MODULE_LIBRARY"
     )
 
-    ec_get_linked_shared_targets(${ROOT_TARGET} _ec_shared_deps)
-    if(NOT _ec_shared_deps)
-        return()
+    set(_dlls "$<TARGET_RUNTIME_DLLS:${ROOT_TARGET}>")
+    if(COPY_EXCLUDE_REGEX)
+        set(_dlls "$<FILTER:${_dlls},EXCLUDE,${COPY_EXCLUDE_REGEX}>")
     endif()
-
-    foreach(_dep IN LISTS _ec_shared_deps)
-        add_custom_command(
-            TARGET ${ROOT_TARGET}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:${_dep}>
-            $<TARGET_FILE_DIR:${ROOT_TARGET}>
-            VERBATIM
-        )
-    endforeach()
+    add_custom_command(
+        TARGET ${ROOT_TARGET}
+        POST_BUILD
+        # `copy_if_different` fails without files, so do nothing when there are no DLLs
+        COMMAND "$<IF:$<BOOL:${_dlls}>,${CMAKE_COMMAND};-E;copy_if_different;${_dlls};$<TARGET_FILE_DIR:${ROOT_TARGET}>,${CMAKE_COMMAND};-E;true>"
+        COMMAND_EXPAND_LISTS
+        VERBATIM
+    )
 endfunction()
 
 # Writes a configuration file containing target/version information.
@@ -359,8 +430,8 @@ endfunction()
 #
 # VERSION_MAJOR: The major version of the target
 # VERSION_MINOR: The minor version of the target
-# VERSION_TWEAK: The tweak version of the target
 # VERSION_PATCH: The patch version of the target
+# VERSION_TWEAK: The tweak version of the target
 #
 # DIR_PATH: The directory where to write the `.h` and `.cpp` files
 #
@@ -369,7 +440,7 @@ endfunction()
 #
 # OUT_FILE_NAMES: If not empty, variable to which to write the path of the generated `.h` and `.cpp` as a list
 function(ec_target_write_config ALIAS_NAME TARGET_NAME
-    VERSION_MAJOR VERSION_MINOR VERSION_TWEAK VERSION_PATCH
+    VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_TWEAK
     DIR_PATH
     EXPORT_MACRO EXPORT_INCLUDE_FILE
     OUT_FILE_NAMES
@@ -389,17 +460,17 @@ function(ec_target_write_config ALIAS_NAME TARGET_NAME
         set(EXPORT_MACRO "${EXPORT_MACRO}\n")
     endif()
 
-    file(WRITE "${DIR_PATH}/${NAME}_config.h"
+    string(CONCAT _header_content
         "// clang-format off\n\n"
         "// config file generated by ECMake for target `${ALIAS_NAME}`\n"
-        "#ifndef __ECMAKE_HG_${full_name}\n"
-        "#define __ECMAKE_HG_${full_name}\n"
+        "#ifndef ECMAKE_HG_${full_name}\n"
+        "#define ECMAKE_HG_${full_name}\n"
         "${EXPORT_INCLUDE_FILE}"
         "\n"
         "#define ${full_name}_VERSION_MAJOR ${VERSION_MAJOR}U\n"
         "#define ${full_name}_VERSION_MINOR ${VERSION_MINOR}U\n"
-        "#define ${full_name}_VERSION_TWEAK ${VERSION_TWEAK}U\n"
         "#define ${full_name}_VERSION_PATCH ${VERSION_PATCH}U\n"
+        "#define ${full_name}_VERSION_TWEAK ${VERSION_TWEAK}U\n"
         "#define ${full_name}_VERSION_STRING \"${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}\"\n"
         "\n"
         "#define ${full_name}_TARGET_NAME \"${TARGET_NAME}\"\n"
@@ -418,7 +489,7 @@ function(ec_target_write_config ALIAS_NAME TARGET_NAME
         "void ec_get_version_${lower_full_name}(unsigned* major, unsigned* minor, unsigned* patch, unsigned* tweak);\n"
         "\n"
         "/// @brief Compare the runtime compiled version of `${ALIAS_NAME}` against the header macros.\n"
-        "/// This function is only useful for shared libraries."
+        "/// This function is only useful for shared libraries.\n"
         "/// @param compare_major Non-zero to compare the major field, 0 to ignore\n"
         "/// @param compare_minor Non-zero to compare the minor field, 0 to ignore\n"
         "/// @param compare_patch Non-zero to compare the patch field, 0 to ignore\n"
@@ -447,11 +518,12 @@ function(ec_target_write_config ALIAS_NAME TARGET_NAME
         "}\n"
         "#endif\n"
         "\n"
-        "#endif // !__ECMAKE_HG_${full_name}\n\n"
+        "#endif // !ECMAKE_HG_${full_name}\n\n"
         "// clang-format on\n"
     )
+    ec_write_file_if_changed("${DIR_PATH}/${NAME}_config.h" "${_header_content}")
 
-    file(WRITE "${DIR_PATH}/${NAME}_config.cpp"
+    string(CONCAT _source_content
         "// clang-format off\n\n"
         "#include \"${NAME}_config.h\"\n"
         "\n"
@@ -463,6 +535,7 @@ function(ec_target_write_config ALIAS_NAME TARGET_NAME
         "}\n\n"
         "// clang-format on\n"
     )
+    ec_write_file_if_changed("${DIR_PATH}/${NAME}_config.cpp" "${_source_content}")
 
     if(OUT_FILE_NAMES)
         set(${OUT_FILE_NAMES} "${DIR_PATH}/${NAME}_config.h;${DIR_PATH}/${NAME}_config.cpp" PARENT_SCOPE)
@@ -472,13 +545,25 @@ endfunction()
 # Sets the ECMake default properties for a specific target.
 # NAME: The target name
 # CXX_VERSION: The C++ version to use when compiling the target
+# C_VERSION: The C version to use when compiling the target
+# Options (pass explicitly, not the caller's ARGN):
+#   NO_CONFORMANT_PREPROCESSOR_MSVC, NO_DEBUG_POSTFIX, NO_PIC
 function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     cmake_parse_arguments("INT"
-        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX"
+        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;NO_PIC"
         ""
         ""
         ${ARGN}
     )
+    ec_assert("ec_target_set_default_properties: unknown argument(s) `${INT_UNPARSED_ARGUMENTS}`"
+        NOT DEFINED INT_UNPARSED_ARGUMENTS
+    )
+
+    if(INT_NO_PIC)
+        set(_pic FALSE)
+    else()
+        set(_pic TRUE)
+    endif()
 
     set_target_properties(${NAME} PROPERTIES
         CXX_STANDARD "${CXX_VERSION}"
@@ -490,10 +575,11 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
         # do not export functions if no EXPORT macro is used
         C_VISIBILITY_PRESET hidden
         CXX_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN hidden
+        VISIBILITY_INLINES_HIDDEN ON
 
-        # always build position independent code
-        POSITION_INDEPENDENT_CODE TRUE
+        # build position independent code unless NO_PIC
+        # (shared libraries are always position independent)
+        POSITION_INDEPENDENT_CODE ${_pic}
 
         # no lib prefix on linux
         PREFIX ""
@@ -511,7 +597,37 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
         # This forces MSVC to use the conformant preprocessor,
         # which should really be a default for portable code.
-        target_compile_options(${NAME} PRIVATE "/Zc:preprocessor")
+        # only for C/C++ sources: other compilers (e.g. nvcc for CUDA) do not accept it
+        target_compile_options(${NAME} PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/Zc:preprocessor>")
         message(VERBOSE "Adding conformant preprocessor (for MSVC)")
+    endif()
+endfunction()
+# Collects the options accepted by `ec_target_set_default_properties` that were
+# set by a caller which parsed its arguments with PREFIX.
+# PREFIX: The prefix used when parsing the caller's arguments
+# OUT_VAR: The output variable, containing the list of set options
+function(ec_get_default_property_flags PREFIX OUT_VAR)
+    set(_flags)
+    foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_DEBUG_POSTFIX NO_PIC)
+        if(${PREFIX}_${_flag})
+            list(APPEND _flags ${_flag})
+        endif()
+    endforeach()
+    set(${OUT_VAR} "${_flags}" PARENT_SCOPE)
+endfunction()
+
+# Asserts that the CUDA language is enabled.
+# `enable_language(CUDA)` cannot be called from inside an ECMake function: it
+# must be called at file scope, otherwise the variables it sets (such as the
+# CUDA runtime library to link) are lost, resulting in link errors.
+function(ec_assert_cuda_enabled)
+    get_property(_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if(NOT "CUDA" IN_LIST _languages)
+        message(FATAL_ERROR
+            "WITH_CUDA requires the CUDA language to be enabled before creating the target.
+"
+            "Add CUDA to `project(... LANGUAGES ... CUDA)`, or call `enable_language(CUDA)` "
+            "at file scope (not inside a function) before this call."
+        )
     endif()
 endfunction()
