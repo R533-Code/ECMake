@@ -23,6 +23,8 @@ ec_add_executable(ExecName)
 
 `ECMake` provides `ec_add_tests`, which supports `Catch2`, `doctest` and `gtest` out of the box.
 
+`ECMake` provides `ec_add_benchmarks`, which supports `Google Benchmark` and `nanobench` out of the box.
+
 `ECMake` provides `ec_add_python_bindings`, which supports `pybind11` and `nanobind` out of the box.
 
 # Documentation:
@@ -89,6 +91,86 @@ ec_add_executable(ExecName)
 - `NO_CONFORMANT_PREPROCESSOR_MSVC`: do not use the conformant preprocessor on `MSVC`
 - `NO_DEBUG_POSTFIX`: do not postfix the output name with `d` on debug
 - `NO_COPY_DEPENDENCIES`: do not copy the DLLs the library depends on next to it after building (Windows only)
+
+## `ec_add_tests`:
+Creates a test executable from all the `.cpp` files of `ROOT_DIR`, linked with the testing framework, whose `main()` is generated.
+
+The testing framework must be available (using `FetchContent` or `find_package`...) before the call: `doctest::doctest`, `Catch2::Catch2` or `GTest::gtest`.
+```cmake
+ec_add_tests(MyTests
+    TESTING_FRAMEWORK doctest
+    LINK_WITH mylib
+)
+```
+### Arguments:
+- `TESTING_FRAMEWORK`: `doctest`, `catch2` or `gtest` (required)
+- `OUT`: out variable of the full target name (useful when namespaces are used)
+- `ROOT_DIR`: the directory in which the test sources are
+  - Default: `${CMAKE_CURRENT_SOURCE_DIR}/tests`
+- `CXX_VERSION`: the C++ standard version
+  - Default: `20`
+- `C_VERSION`: the C standard version
+  - Default: `99`
+- `INSTALL_BINDIR`: the install directory
+  - Default: `${CMAKE_INSTALL_BINDIR}/tests`
+- `LINK_WITH`: libraries to link with, forwarded to `target_link_libraries`
+  - If the list does not start with `PUBLIC`, `PRIVATE` or `INTERFACE`, `PRIVATE` is used
+- `INSTALL_COMPONENT`: the install component
+  - Default: `Runtime`
+
+### Options:
+- `NO_MAIN`: do not generate `main()`, the sources provide it (for example, using `DOCTEST_CONFIG_IMPLEMENT`)
+- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
+
+## `ec_add_benchmarks`:
+Creates a benchmark executable from all the `.cpp` files of `ROOT_DIR`, linked with the benchmarking framework, whose `main()` is generated.
+
+The benchmarking framework must be available (using `FetchContent` or `find_package`...) before the call: `benchmark::benchmark` for [Google Benchmark](https://github.com/google/benchmark), `nanobench::nanobench` or `nanobench` for [nanobench](https://github.com/martinus/nanobench).
+```cmake
+ec_add_benchmarks(MyBenchmarks
+    BENCHMARK_FRAMEWORK google
+    LINK_WITH mylib
+)
+```
+### Arguments:
+- `BENCHMARK_FRAMEWORK`: `google` or `nanobench` (required)
+- `ROOT_DIR`: the directory in which the benchmark sources are
+  - Default: `${CMAKE_CURRENT_SOURCE_DIR}/benchmarks`
+- `INSTALL_BINDIR`: the install directory
+  - Default: `${CMAKE_INSTALL_BINDIR}/benchmarks`
+- `OUT`, `CXX_VERSION`, `C_VERSION`, `LINK_WITH`, `INSTALL_COMPONENT`: same as for `ec_add_tests`
+
+### Options:
+- `NO_MAIN`: do not generate `main()`, the sources provide it (e.g. using `BENCHMARK_MAIN()`)
+- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
+
+### Google Benchmark:
+Benchmarks are registered using `BENCHMARK(...)`, in any number of source files. The generated `main()` accepts all the [Google Benchmark flags](https://github.com/google/benchmark/blob/main/docs/user_guide.md), e.g. `--benchmark_filter=<regex>` or `--benchmark_out=<file>`.
+
+### nanobench:
+nanobench has no benchmark registration nor runner, so `ECMake` generates a tiny registry, `ec_nanobench.h`, using the same shape as Google Benchmark:
+```cpp
+#include <ec_nanobench.h>
+
+static void BM_Containers(ankerl::nanobench::Bench& bench) {
+    bench.relative(true);
+    bench.run("std::vector", [&] { /* ... */ });
+    bench.run("std::list",   [&] { /* ... */ });
+}
+BENCHMARK(BM_Containers); // registered as "BM_Containers", also the title of `bench`
+```
+Benchmarks can be registered in any number of source files. Unlike Google Benchmark, `BENCHMARK` returns nothing to chain options on: nanobench is configured through `bench`. Like nanobench itself, the registry requires C++11.
+
+The generated `main()` accepts a subset of the Google Benchmark flags:
+- `--benchmark_filter=<regex>`: only run the benchmarks whose registered name matches (prefix with `-` to exclude, `all` for all)
+- `--benchmark_list_tests`: list the registered names and exit
+- `--benchmark_dry_run`: run each benchmark for a single iteration
+- `--benchmark_out=<file>`: write the results to `<file>`, using the Google Benchmark JSON schema (`--benchmark_out_format=json` is the only accepted format)
+  - The results can thus be processed by the same tools, e.g. Google Benchmark's `tools/compare.py`
+  - Each result is named `<registered name>/<run name>` (e.g. `BM_Containers/std::vector`), and its time is the median time per operation
+  - nanobench does not measure CPU time: `cpu_time` is the same as `real_time`
+
+With `NO_MAIN`, the registry is still generated: call `ecmake::nanobench::run(argc, argv)` from your own `main()`.
 
 Unknown arguments are an error in all `ec_*` functions.
 
