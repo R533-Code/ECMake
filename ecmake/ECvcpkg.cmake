@@ -18,10 +18,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include(ECParseArgs)
+include_guard(GLOBAL)
+
+# Included by path (not through CMAKE_MODULE_PATH), so that this file can be
+# included before the first `project()`, before ECMake itself is added:
+#   include("path/to/ECMake/ecmake/ECvcpkg.cmake")
+#   ec_enable_vcpkg("path/to/vcpkg")
+#   project(MyProject)
+#   add_subdirectory("path/to/ECMake")
+include("${CMAKE_CURRENT_LIST_DIR}/ECParseArgs.cmake")
+
+# Resolves the path of a triplet file, or an empty string if it does not exist.
+function(_ec_resolve_triplet_file out_var vcpkg_root triplet_name)
+    set(_f1 "${vcpkg_root}/triplets/${triplet_name}.cmake")
+    set(_f2 "${vcpkg_root}/triplets/community/${triplet_name}.cmake")
+    if(EXISTS "${_f1}")
+        set(${out_var} "${_f1}" PARENT_SCOPE)
+    elseif(EXISTS "${_f2}")
+        set(${out_var} "${_f2}" PARENT_SCOPE)
+    else()
+        set(${out_var} "" PARENT_SCOPE)
+    endif()
+endfunction()
 
 # Enables VCPKG programmatically.
-# This must be called before `project()`.
+# This must be called before the first `project()` (which also means before
+# adding ECMake through `add_subdirectory`).
 function(ec_enable_vcpkg VCPKG_REPO_DIR)
     ec_parse_with_defaults(VCPKG
         "STAMP_FILE;${CMAKE_BINARY_DIR}/.vcpkg_init"
@@ -37,9 +59,22 @@ function(ec_enable_vcpkg VCPKG_REPO_DIR)
         message(FATAL_ERROR "VCPKG_REPO_DIR does not exist or is not a directory: '${VCPKG_REPO_DIR}'")
     endif()
 
-    if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT CMAKE_TOOLCHAIN_FILE STREQUAL "")
+    if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT "${CMAKE_TOOLCHAIN_FILE}" STREQUAL "")
         message(STATUS "CMAKE_TOOLCHAIN_FILE already set to: ${CMAKE_TOOLCHAIN_FILE} (ec_enable_vcpkg will not override)")
         return()
+    endif()
+
+    # the toolchain file is only read by the first `project()` call
+    if(DEFINED CMAKE_PROJECT_NAME)
+        message(FATAL_ERROR
+            "ec_enable_vcpkg must be called before the first `project()` call "
+            "(`project(${CMAKE_PROJECT_NAME})` was already called).\n"
+            "Note that adding ECMake through `add_subdirectory` also calls `project()`: "
+            "include `ECvcpkg.cmake` by path at the top of your CMakeLists.txt instead:\n"
+            "  include(\"path/to/ECMake/ecmake/ECvcpkg.cmake\")\n"
+            "  ec_enable_vcpkg(\"path/to/vcpkg\")\n"
+            "  project(...)"
+        )
     endif()
 
     if(WIN32)
@@ -60,7 +95,7 @@ function(ec_enable_vcpkg VCPKG_REPO_DIR)
     else()
         message(STATUS "Bootstrapping vcpkg in '${VCPKG_REPO_DIR}'...")
         execute_process(
-            COMMAND "${_bootstrap}"
+            COMMAND "${_bootstrap}" -disableMetrics
             WORKING_DIRECTORY "${VCPKG_REPO_DIR}"
             COMMAND_ERROR_IS_FATAL ANY
         )
@@ -87,7 +122,7 @@ endfunction()
 #   ec_vcpkg_install(<pkg> LINKAGE STATIC|SHARED)    # derives triplet conservatively
 #   ec_vcpkg_install(<pkg> TRIPLET <triplet-name>)   # explicit triplet (recommended)
 macro(ec_vcpkg_install PACKAGE)
-  if(NOT DEFINED EC_VCPKG_EXECUTABLE OR EC_VCPKG_EXECUTABLE STREQUAL "")
+  if(NOT DEFINED EC_VCPKG_EXECUTABLE OR "${EC_VCPKG_EXECUTABLE}" STREQUAL "")
     message(FATAL_ERROR "ec_vcpkg_install() requires EC_VCPKG_EXECUTABLE to be set. Call ec_enable_vcpkg()/ec_vcpkg_init() first.")
   endif()
   if(NOT EXISTS "${EC_VCPKG_EXECUTABLE}")
@@ -102,7 +137,7 @@ macro(ec_vcpkg_install PACKAGE)
   #   TRIPLET: <triplet>
   cmake_parse_arguments(VCPKGI "" "LINKAGE;TRIPLET" "" ${ARGN})
 
-  if(DEFINED VCPKGI_UNPARSED_ARGUMENTS AND NOT VCPKGI_UNPARSED_ARGUMENTS STREQUAL "")
+  if(DEFINED VCPKGI_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR
       "ec_vcpkg_install(${PACKAGE} ...): unrecognized arguments: ${VCPKGI_UNPARSED_ARGUMENTS}\n"
       "Valid forms:\n"
@@ -112,32 +147,21 @@ macro(ec_vcpkg_install PACKAGE)
     )
   endif()
 
-  if(NOT VCPKGI_TRIPLET STREQUAL "" AND NOT VCPKGI_LINKAGE STREQUAL "")
+  # quoted: a keyword that was not passed is an undefined variable, and an
+  # unquoted undefined variable name would be compared as a literal string
+  if(NOT "${VCPKGI_TRIPLET}" STREQUAL "" AND NOT "${VCPKGI_LINKAGE}" STREQUAL "")
     message(FATAL_ERROR "ec_vcpkg_install(${PACKAGE} ...): use TRIPLET or LINKAGE, not both.")
   endif()
-
-  # resolve triplet file (best-effort validation that triplet exists in this checkout)
-  function(_ec_resolve_triplet_file out_var vcpkg_root triplet_name)
-    set(_f1 "${vcpkg_root}/triplets/${triplet_name}.cmake")
-    set(_f2 "${vcpkg_root}/triplets/community/${triplet_name}.cmake")
-    if(EXISTS "${_f1}")
-      set(${out_var} "${_f1}" PARENT_SCOPE)
-    elseif(EXISTS "${_f2}")
-      set(${out_var} "${_f2}" PARENT_SCOPE)
-    else()
-      set(${out_var} "" PARENT_SCOPE)
-    endif()
-  endfunction()
 
   # choose triplet
   set(_triplet "")
   set(_triplet_file "")
 
-  if(NOT VCPKGI_TRIPLET STREQUAL "")
+  if(NOT "${VCPKGI_TRIPLET}" STREQUAL "")
     set(_triplet "${VCPKGI_TRIPLET}")
 
   else()
-    if(NOT DEFINED VCPKG_TARGET_TRIPLET OR VCPKG_TARGET_TRIPLET STREQUAL "")
+    if(NOT DEFINED VCPKG_TARGET_TRIPLET OR "${VCPKG_TARGET_TRIPLET}" STREQUAL "")
       message(FATAL_ERROR
         "ec_vcpkg_install(${PACKAGE} ...): TRIPLET not provided and VCPKG_TARGET_TRIPLET is not set.\n"
         "Either set VCPKG_TARGET_TRIPLET or call ec_vcpkg_install(${PACKAGE} TRIPLET <triplet-name>)."
@@ -146,11 +170,11 @@ macro(ec_vcpkg_install PACKAGE)
 
     set(_base_triplet "${VCPKG_TARGET_TRIPLET}")
 
-    if(VCPKGI_LINKAGE STREQUAL "")
+    if("${VCPKGI_LINKAGE}" STREQUAL "")
       set(_triplet "${_base_triplet}")
 
     else()
-      if(NOT (VCPKGI_LINKAGE STREQUAL "STATIC" OR VCPKGI_LINKAGE STREQUAL "SHARED"))
+      if(NOT ("${VCPKGI_LINKAGE}" STREQUAL "STATIC" OR "${VCPKGI_LINKAGE}" STREQUAL "SHARED"))
         message(FATAL_ERROR "ec_vcpkg_install(${PACKAGE} ...): LINKAGE must be STATIC or SHARED (got '${VCPKGI_LINKAGE}').")
       endif()
 
@@ -178,7 +202,7 @@ macro(ec_vcpkg_install PACKAGE)
   endif()
 
   _ec_resolve_triplet_file(_triplet_file "${_ec_vcpkg_root}" "${_triplet}")
-  if(_triplet_file STREQUAL "")
+  if("${_triplet_file}" STREQUAL "")
     message(FATAL_ERROR
       "ec_vcpkg_install(${PACKAGE} ...): triplet '${_triplet}' not found under:\n"
       "  '${_ec_vcpkg_root}/triplets' or '${_ec_vcpkg_root}/triplets/community'\n"
