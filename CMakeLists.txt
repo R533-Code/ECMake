@@ -10,25 +10,32 @@ project(ECMake VERSION 0.0.0.0
 # get version information and print
 set(EC_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(EC_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(EC_VERSION_TWEAK ${PROJECT_VERSION_TWEAK})
 set(EC_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_TWEAK}.${EC_VERSION_PATCH}")
+set(EC_VERSION_TWEAK ${PROJECT_VERSION_TWEAK})
+set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_PATCH}.${EC_VERSION_TWEAK}")
 
 if(NOT PROJECT_IS_TOP_LEVEL)
     set(EC_VERSION_MAJOR ${PROJECT_VERSION_MAJOR} PARENT_SCOPE)
     set(EC_VERSION_MINOR ${PROJECT_VERSION_MINOR} PARENT_SCOPE)
-    set(EC_VERSION_TWEAK ${PROJECT_VERSION_TWEAK} PARENT_SCOPE)
     set(EC_VERSION_PATCH ${PROJECT_VERSION_PATCH} PARENT_SCOPE)
-    set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_TWEAK}.${EC_VERSION_PATCH}" PARENT_SCOPE)
+    set(EC_VERSION_TWEAK ${PROJECT_VERSION_TWEAK} PARENT_SCOPE)
+    set(EC_VERSION_STRING "${EC_VERSION_MAJOR}.${EC_VERSION_MINOR}.${EC_VERSION_PATCH}.${EC_VERSION_TWEAK}" PARENT_SCOPE)
 endif()
 
+# Off by default for projects using ECMake: the directory is in the source tree
+# of the top-level project, and FetchContent also puts its build directories
+# there, which are then shared by all the build directories of that project.
 option(EC_SET_FETCHCONTENT_DIR
-    "Allow ECMake to override the directory in which FetchContent downloads."
-    TRUE
+    "Allow ECMake to override the directory in which FetchContent downloads (`<source>/.build_cache/fetch_content`)."
+    ${PROJECT_IS_TOP_LEVEL}
 )
 
 # add `ecmake` directory to the include search path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ecmake")
+if(NOT PROJECT_IS_TOP_LEVEL)
+    # also allow `include(ECExecutable)`, ... in the project using ECMake
+    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
+endif()
 include(ECParseArgs)
 include(ECUtil)
 include(ECTests)
@@ -57,12 +64,26 @@ if(PROJECT_IS_TOP_LEVEL)
     project(ECMakeTest)
     ec_namespace(tests)
 
+    # tests requiring CUDA or Python are skipped if those are not available
+    include(CheckLanguage)
+    check_language(CUDA)
+    find_package(Python QUIET COMPONENTS Interpreter Development.Module)
+
     foreach(subdir ${ec_all_tests})
         unset(_test_namespace)
 
         # strip CMakeLists.txt from name
         cmake_path(GET subdir PARENT_PATH subdir)
         cmake_path(GET subdir FILENAME subdir_name)
+
+        if(subdir_name MATCHES "cuda" AND NOT CMAKE_CUDA_COMPILER)
+            message(STATUS "Skipping test `${subdir_name}`: no CUDA compiler found")
+            continue()
+        endif()
+        if(subdir_name MATCHES "(nanobind|pybind11)" AND NOT Python_FOUND)
+            message(STATUS "Skipping test `${subdir_name}`: Python (Interpreter, Development.Module) not found")
+            continue()
+        endif()
 
         if(subdir_name MATCHES "basic_.*")
             set(_test_namespace basic)
