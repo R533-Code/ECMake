@@ -23,10 +23,10 @@ include_guard(GLOBAL)
 # Starts a namespace.
 # NAME: The name of the new namespace
 function(ec_namespace NAME)
-    ec_assert("${NAME} is not a valid namespace name!"
-        NAME MATCHES "[a-zA-Z][a-zA-Z0-9]*"
-    )
     string(STRIP "${NAME}" NAME)
+    ec_assert("`${NAME}` is not a valid namespace name (expected `[a-zA-Z][a-zA-Z0-9]*`)!"
+        NAME MATCHES "^[a-zA-Z][a-zA-Z0-9]*$"
+    )
     ec_property_push_back(EC_NAMESPACE_STACK ${NAME})
 endfunction()
 
@@ -36,26 +36,32 @@ function(ec_endnamespace)
 endfunction()
 
 # Returns the full target name by performing a namespace lookup.
+# The lookup starts in the current (innermost) namespace and goes outward,
+# ending with the global (empty) namespace.
 # NAME: The name of the target
 # OUT_VAR: The output variable
 function(ec_get_target NAME OUT_VAR)
     ec_property_get(EC_NAMESPACE_STACK _current_namespace)
-    string(REPLACE "::" "-" NAME ${NAME})
+    string(REPLACE "::" "-" NAME "${NAME}")
 
-    list(LENGTH _current_namespace _length)
-    foreach(i RANGE 1 ${_length})
-        unset(_target)
+    while(TRUE)
+        set(_target "")
         foreach(_namespace IN LISTS _current_namespace)
             string(APPEND _target "${_namespace}-")
         endforeach()
 
         set(_target "${_target}${NAME}")
-        if (TARGET ${_target})
-            set(${OUT_VAR} ${_target} PARENT_SCOPE)
+        if(TARGET "${_target}")
+            set(${OUT_VAR} "${_target}" PARENT_SCOPE)
             return()
         endif()
+
+        list(LENGTH _current_namespace _length)
+        if(_length EQUAL 0)
+            break()
+        endif()
         list(POP_BACK _current_namespace)
-    endforeach()
+    endwhile()
 
     ec_assert("Target ${NAME} does not exist!"
         FALSE
