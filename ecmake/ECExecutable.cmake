@@ -53,12 +53,12 @@ function(ec_add_executable NAME)
     ec_parse_version("${EXEC_VERSION}" EXEC_VERSION)
 
     if(${EXEC_WITH_CUDA})
-        enable_language(CUDA)
-        file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/*.cpp" "${EXEC_ROOT_DIR}/*.c" "${EXEC_ROOT_DIR}/*.cu")
-        file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/*.hpp" "${EXEC_ROOT_DIR}/*.h" "${EXEC_ROOT_DIR}/*.cuh")
+        ec_assert_cuda_enabled()
+        file(GLOB_RECURSE _exec_cpp CONFIGURE_DEPENDS "${EXEC_ROOT_DIR}/*.cpp" "${EXEC_ROOT_DIR}/*.c" "${EXEC_ROOT_DIR}/*.cu")
+        file(GLOB_RECURSE _exec_hpp CONFIGURE_DEPENDS "${EXEC_ROOT_DIR}/*.hpp" "${EXEC_ROOT_DIR}/*.h" "${EXEC_ROOT_DIR}/*.cuh")
     else()
-        file(GLOB_RECURSE _exec_cpp "${EXEC_ROOT_DIR}/*.cpp" "${EXEC_ROOT_DIR}/*.c")
-        file(GLOB_RECURSE _exec_hpp "${EXEC_ROOT_DIR}/*.hpp" "${EXEC_ROOT_DIR}/*.h")
+        file(GLOB_RECURSE _exec_cpp CONFIGURE_DEPENDS "${EXEC_ROOT_DIR}/*.cpp" "${EXEC_ROOT_DIR}/*.c")
+        file(GLOB_RECURSE _exec_hpp CONFIGURE_DEPENDS "${EXEC_ROOT_DIR}/*.hpp" "${EXEC_ROOT_DIR}/*.h")
     endif()
 
     if(NOT EXEC_NO_CONFIG)
@@ -79,8 +79,9 @@ function(ec_add_executable NAME)
     target_include_directories(${FULL_NAME} PUBLIC "${EXEC_ROOT_DIR}")
 
     # set properties for better defaults
+    ec_get_default_property_flags(EXEC _exec_flags)
     ec_target_set_default_properties(${FULL_NAME} ${EXEC_CXX_VERSION} ${EXEC_C_VERSION}
-        ${ARGN}
+        ${_exec_flags}
     )
 
     if(NOT EXEC_NO_INSTALL)
@@ -92,9 +93,8 @@ function(ec_add_executable NAME)
         )
     endif()
 
-    if(NOT EXEC_LINK_WITH STREQUAL "<none>")
-        target_link_libraries(${FULL_NAME} ${EXEC_LINK_WITH})
-    endif()
+    # defaults to PRIVATE if no scope keyword is given
+    ec_target_link_with(${FULL_NAME} PRIVATE ${EXEC_LINK_WITH})
 
     if(NOT EXEC_OUT STREQUAL "<none>")
         set(${EXEC_OUT} ${FULL_NAME} PARENT_SCOPE)
