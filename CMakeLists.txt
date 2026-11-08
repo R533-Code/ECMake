@@ -113,5 +113,27 @@ if(PROJECT_IS_TOP_LEVEL)
     message(VERBOSE "Found dynamic libraries: ${all_libraries_dynamic}")
     message(VERBOSE "Found static libraries: ${all_libraries_static}")
 
+    # Register the executables and Python modules of the test suite with CTest,
+    # so that `ctest` checks that they run (used by the CI).
+    enable_testing()
+    foreach(_alias IN LISTS all_executables)
+        ec_get_aliased_target("${_alias}" _target)
+        set(_args)
+        if(_alias MATCHES "benchmark")
+            # only check that the benchmarks run, without measuring
+            set(_args --benchmark_dry_run)
+        endif()
+        add_test(NAME "${_alias}" COMMAND ${_target} ${_args})
+    endforeach()
+
+    foreach(_module IN ITEMS basic_nanobind basic_pybind11)
+        if(TARGET ${_module})
+            add_test(NAME "python::${_module}"
+                COMMAND "${Python_EXECUTABLE}" -c "import ${_module}; assert ${_module}.sum(1, 2) == 3"
+                WORKING_DIRECTORY "$<TARGET_FILE_DIR:${_module}>"
+            )
+        endif()
+    endforeach()
+
     ec_endnamespace(tests)
 endif()
