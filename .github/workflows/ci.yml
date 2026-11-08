@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # weekly, to catch breaking changes in the tools or the fetched dependencies
+    - cron: "0 6 * * 1"
+
+# a newer push to the same branch/PR cancels the running workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # multi-config generator: all the configs are built from one configure.
+          # "Visual Studio" lets CMake pick the newest installed version (the
+          # runner image moves to new Visual Studio versions over time)
+          - name: Windows MSVC (Visual Studio)
+            os: windows-latest
+            generator: Visual Studio
+            configs: Debug Release
+            cmake: latest
+
+          - name: Windows MSVC (Ninja, Release)
+            os: windows-latest
+            generator: Ninja
+            configs: Release
+            msvc: true
+            cmake: latest
+
+          - name: Ubuntu GCC (Debug)
+            os: ubuntu-latest
+            generator: Ninja
+            configs: Debug
+            cc: gcc
+            cxx: g++
+            cmake: latest
+
+          - name: Ubuntu GCC (Release)
+            os: ubuntu-latest
+            generator: Ninja
+            configs: Release
+            cc: gcc
+            cxx: g++
+            cmake: latest
+
+          - name: Ubuntu Clang (Debug)
+            os: ubuntu-latest
+            generator: Ninja
+            configs: Debug
+            cc: clang
+            cxx: clang++
+            cmake: latest
+
+          - name: macOS AppleClang (Debug)
+            os: macos-latest
+            generator: Ninja
+            configs: Debug
+            cmake: latest
+
+          - name: macOS AppleClang (Release)
+            os: macos-latest
+            generator: Ninja
+            configs: Release
+            cmake: latest
+
+          # the minimum CMake version declared by ECMake
+          - name: Ubuntu GCC (CMake 3.30, Debug)
+            os: ubuntu-latest
+            generator: Ninja
+            configs: Debug
+            cc: gcc
+            cxx: g++
+            cmake: "~3.30.0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@f86dd60acae0d132056913e248bdabf0e0580b7a # v4.4.5
+        with:
+          cmakeVersion: ${{ matrix.cmake }}
+          ninjaVersion: latest
+
+      # Ninja on Windows needs the MSVC environment (the Visual Studio generator does not)
+      - name: Set up MSVC environment
+        if: matrix.msvc
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+
+      - name: Configure, build and test
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+          GENERATOR: ${{ matrix.generator }}
+          CONFIGS: ${{ matrix.configs }}
+          PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          # empty CC/CXX would be treated as a compiler name
+          if [ -z "${CC}" ]; then unset CC; fi
+          if [ -z "${CXX}" ]; then unset CXX; fi
+          cmake --version
+
+          configure() { # <build dir> [extra cmake arguments...]
+            local dir="$1"; shift
+            local generator_args=(-G "${GENERATOR}")
+            # no -G: CMake's default on Windows is the newest Visual Studio
+            if [ "${GENERATOR}" = "Visual Studio" ]; then generator_args=(); fi
+            cmake -S . -B "${dir}" ${generator_args[@]+"${generator_args[@]}"} -DPython_EXECUTABLE="${PYTHON}" "$@"
+          }
+          build_and_test() { # <build dir> <config>
+            cmake --build "$1" --config "$2" --parallel
+            ctest --test-dir "$1" -C "$2" --output-on-failure
+          }
+
+          case "${GENERATOR}" in
+            "Visual Studio"*|"Ninja Multi-Config"|Xcode)
+              configure build
+              for config in ${CONFIGS}; do
+                echo "::group::${config}"
+                build_and_test build "${config}"
+                echo "::endgroup::"
+              done
+              ;;
+            *)
+              for config in ${CONFIGS}; do
+                configure "build-${config}" -DCMAKE_BUILD_TYPE="${config}"
+                build_and_test "build-${config}" "${config}"
+              done
+              ;;
+          esac

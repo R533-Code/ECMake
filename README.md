@@ -1,4 +1,6 @@
 # ECMake:
+[![CI](https://github.com/R533-Code/ECMake/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/R533-Code/ECMake/actions/workflows/ci.yml)
+
 `ECMake`, or `Easy CMake` is a CMake library to speed-up setting up C++ projects.
 
 CMake is a very powerful build system, but this power is annoyingly verbose and repetitive for common project setups.
