@@ -562,10 +562,10 @@ endfunction()
 # CXX_VERSION: The C++ version to use when compiling the target
 # C_VERSION: The C version to use when compiling the target
 # Options (pass explicitly, not the caller's ARGN):
-# NO_CONFORMANT_PREPROCESSOR_MSVC, NO_DEBUG_POSTFIX, NO_PIC
+# NO_CONFORMANT_PREPROCESSOR_MSVC, NO_CONFORMANT_CPLUSPLUS_MSVC, NO_DEBUG_POSTFIX, NO_PIC
 function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
     cmake_parse_arguments("INT"
-        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_DEBUG_POSTFIX;NO_PIC"
+        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_CONFORMANT_CPLUSPLUS_MSVC;NO_DEBUG_POSTFIX;NO_PIC"
         ""
         ""
         ${ARGN}
@@ -609,12 +609,53 @@ function(ec_target_set_default_properties NAME CXX_VERSION C_VERSION)
         message(VERBOSE "Adding debug postfix")
     endif()
 
-    if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
+    set(_msvc_flags)
+
+    foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_CONFORMANT_CPLUSPLUS_MSVC)
+        if(INT_${_flag})
+            list(APPEND _msvc_flags ${_flag})
+        endif()
+    endforeach()
+
+    ec_target_set_msvc_conformance(${NAME} ${_msvc_flags})
+endfunction()
+
+# Makes MSVC behave in a standard conformant way for a specific target.
+# Does nothing for other compilers.
+# NAME: The target name
+# Options (pass explicitly, not the caller's ARGN):
+# NO_CONFORMANT_PREPROCESSOR_MSVC: do not use the conformant preprocessor (`/Zc:preprocessor`)
+# NO_CONFORMANT_CPLUSPLUS_MSVC: do not make `__cplusplus` report the C++ version in use (`/Zc:__cplusplus`)
+function(ec_target_set_msvc_conformance NAME)
+    cmake_parse_arguments("INT"
+        "NO_CONFORMANT_PREPROCESSOR_MSVC;NO_CONFORMANT_CPLUSPLUS_MSVC"
+        ""
+        ""
+        ${ARGN}
+    )
+    ec_assert("ec_target_set_msvc_conformance: unknown argument(s) `${INT_UNPARSED_ARGUMENTS}`"
+        NOT DEFINED INT_UNPARSED_ARGUMENTS
+    )
+
+    if(NOT MSVC)
+        return()
+    endif()
+
+    if(NOT INT_NO_CONFORMANT_PREPROCESSOR_MSVC)
         # This forces MSVC to use the conformant preprocessor,
         # which should really be a default for portable code.
         # only for C/C++ sources: other compilers (e.g. nvcc for CUDA) do not accept it
         target_compile_options(${NAME} PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/Zc:preprocessor>")
         message(VERBOSE "Adding conformant preprocessor (for MSVC)")
+    endif()
+
+    if(NOT INT_NO_CONFORMANT_CPLUSPLUS_MSVC)
+        # By default MSVC always defines `__cplusplus` as 199711L, whatever the
+        # C++ version in use (which is only reported by `_MSVC_LANG`).
+        # only for C++ sources: the macro does not exist in C, and other
+        # compilers (e.g. nvcc for CUDA) do not accept it
+        target_compile_options(${NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
+        message(VERBOSE "Adding conformant __cplusplus (for MSVC)")
     endif()
 endfunction()
 
@@ -625,7 +666,7 @@ endfunction()
 function(ec_get_default_property_flags PREFIX OUT_VAR)
     set(_flags)
 
-    foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_DEBUG_POSTFIX NO_PIC)
+    foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_CONFORMANT_CPLUSPLUS_MSVC NO_DEBUG_POSTFIX NO_PIC)
         if(${PREFIX}_${_flag})
             list(APPEND _flags ${_flag})
         endif()

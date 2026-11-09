@@ -33,7 +33,7 @@ function(ec_add_python_bindings TARGET_NAME)
     ec_parse_with_defaults(
         BIND
         "ROOT_DIR;${CMAKE_CURRENT_SOURCE_DIR};SRC_DIR;bind_python;CXX_VERSION;20;STUB_PATTERN_FILES;<none>;LINK_WITH;<none>;BIND_PREFIX;bind_python_;INSTALL_BINDIR;${EC_PYTHON_DEFAULT_INSTALL};INSTALL_COMPONENT;Runtime;STUB_PYTHON_PATH;<none>;STUB_MODULE_NAME;<none>"
-        "NO_REGISTER_STUB_FILES;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_COPY_DEPENDENCIES" # flags
+        "NO_REGISTER_STUB_FILES;NO_INSTALL;NO_CONFORMANT_PREPROCESSOR_MSVC;NO_CONFORMANT_CPLUSPLUS_MSVC;NO_COPY_DEPENDENCIES" # flags
         "ROOT_DIR;BINDING_FRAMEWORK;SRC_DIR;CXX_VERSION;BIND_PREFIX;INSTALL_BINDIR;INSTALL_COMPONENT;STUB_PYTHON_PATH;STUB_MODULE_NAME" # one-value
         "STUB_PATTERN_FILES;LINK_WITH" # multi-value
         ${ARGN}
@@ -204,12 +204,17 @@ function(ec_add_python_bindings TARGET_NAME)
         CXX_STANDARD_REQUIRED ON
     )
 
-    if(NOT BIND_NO_CONFORMANT_PREPROCESSOR_MSVC AND MSVC)
-        # Add preprocessor conformance for MSVC
-        target_compile_options(${TARGET_NAME} PRIVATE
-            "$<$<COMPILE_LANGUAGE:C,CXX>:/Zc:preprocessor>"
-        )
-    endif()
+    # `ec_target_set_default_properties` is not used here, as the module name
+    # must stay the one Python imports (no debug postfix)
+    set(_msvc_flags)
+
+    foreach(_flag IN ITEMS NO_CONFORMANT_PREPROCESSOR_MSVC NO_CONFORMANT_CPLUSPLUS_MSVC)
+        if(BIND_${_flag})
+            list(APPEND _msvc_flags ${_flag})
+        endif()
+    endforeach()
+
+    ec_target_set_msvc_conformance(${TARGET_NAME} ${_msvc_flags})
 
     target_include_directories(${TARGET_NAME} PRIVATE
         "${BIND_ROOT_DIR}/${BIND_SRC_DIR}"
