@@ -57,6 +57,7 @@ ec_add_executable(ExecName)
 - `NO_INSTALL`: do not install the executable when INSTALL is run
 - `NO_PIC`: do not make the executable's code position independent
 - `NO_CONFORMANT_PREPROCESSOR_MSVC`: do not use the conformant preprocessor on `MSVC`
+- `NO_CONFORMANT_CPLUSPLUS_MSVC`: do not make `__cplusplus` report the C++ version in use on `MSVC` (`/Zc:__cplusplus`)
 - `NO_DEBUG_POSTFIX`: do not postfix the output name with `d` on debug
 - `NO_COPY_DEPENDENCIES`: do not copy the DLLs the executable depends on next to it after building (Windows only)
 
@@ -91,6 +92,7 @@ ec_add_executable(ExecName)
 - `NO_INSTALL`: do not install the library when INSTALL is run
 - `NO_PIC`: do not make the library's code position independent (shared libraries are always position independent)
 - `NO_CONFORMANT_PREPROCESSOR_MSVC`: do not use the conformant preprocessor on `MSVC`
+- `NO_CONFORMANT_CPLUSPLUS_MSVC`: do not make `__cplusplus` report the C++ version in use on `MSVC` (`/Zc:__cplusplus`)
 - `NO_DEBUG_POSTFIX`: do not postfix the output name with `d` on debug
 - `NO_COPY_DEPENDENCIES`: do not copy the DLLs the library depends on next to it after building (Windows only)
 
@@ -122,7 +124,7 @@ ec_add_tests(MyTests
 
 ### Options:
 - `NO_MAIN`: do not generate `main()`, the sources provide it (for example, using `DOCTEST_CONFIG_IMPLEMENT`)
-- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
+- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_CONFORMANT_CPLUSPLUS_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
 
 ## `ec_add_benchmarks`:
 Creates a benchmark executable from all the `.cpp` files of `ROOT_DIR`, linked with the benchmarking framework, whose `main()` is generated.
@@ -144,7 +146,7 @@ ec_add_benchmarks(MyBenchmarks
 
 ### Options:
 - `NO_MAIN`: do not generate `main()`, the sources provide it (e.g. using `BENCHMARK_MAIN()`)
-- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
+- `NO_INSTALL`, `NO_PIC`, `NO_CONFORMANT_PREPROCESSOR_MSVC`, `NO_CONFORMANT_CPLUSPLUS_MSVC`, `NO_DEBUG_POSTFIX`, `NO_COPY_DEPENDENCIES`: same as for `ec_add_executable`
 
 ### Google Benchmark:
 Benchmarks are registered using `BENCHMARK(...)`, in any number of source files. The generated `main()` accepts all the [Google Benchmark flags](https://github.com/google/benchmark/blob/main/docs/user_guide.md), e.g. `--benchmark_filter=<regex>` or `--benchmark_out=<file>`.
