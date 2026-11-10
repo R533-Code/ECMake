@@ -24,8 +24,8 @@ include_guard(GLOBAL)
 # NAME: The name of the new namespace
 function(ec_namespace NAME)
     string(STRIP "${NAME}" NAME)
-    ec_assert("`${NAME}` is not a valid namespace name (expected `[a-zA-Z][a-zA-Z0-9]*`)!"
-        NAME MATCHES "^[a-zA-Z][a-zA-Z0-9]*$"
+    ec_assert("`${NAME}` is not a valid namespace name (expected `[a-zA-Z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*`)!"
+        NAME MATCHES "^[a-zA-Z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*$"
     )
     ec_property_push_back(EC_NAMESPACE_STACK ${NAME})
 endfunction()
